@@ -1,4 +1,4 @@
-# Delta Chat API for Go
+# Chatmail API for Go
 
 ![Latest release](https://img.shields.io/github/v/tag/deltachat/deltachat-rpc-client-go?label=release)
 [![Go Reference](https://pkg.go.dev/badge/github.com/deltachat/deltachat-rpc-client-go.svg)](https://pkg.go.dev/github.com/deltachat/deltachat-rpc-client-go)
@@ -6,7 +6,7 @@
 ![Coverage](https://img.shields.io/badge/Coverage-72.0%25-brightgreen)
 [![Go Report Card](https://goreportcard.com/badge/github.com/deltachat/deltachat-rpc-client-go)](https://goreportcard.com/report/github.com/deltachat/deltachat-rpc-client-go)
 
-Delta Chat client & bot API for Golang.
+Chatmail client & bot API for Golang.
 
 ## Install
 
@@ -16,7 +16,7 @@ go get -u github.com/deltachat/deltachat-rpc-client-go
 
 ### Installing deltachat-rpc-server
 
-This package depends on a standalone Delta Chat RPC server `deltachat-rpc-server` program that must be
+This package depends on a standalone Chatmail RPC server `deltachat-rpc-server` program that must be
 available in your `PATH`. For installation instructions check:
 https://github.com/deltachat/deltachat-core-rust/tree/master/deltachat-rpc-server
 
