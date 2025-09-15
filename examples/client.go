@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat"
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/option"
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/transport"
+	"github.com/chatmail/rpc-client-go/deltachat"
+	"github.com/chatmail/rpc-client-go/deltachat/option"
+	"github.com/chatmail/rpc-client-go/deltachat/transport"
 )
 
 // Get the first available account or create a new one if none exists.

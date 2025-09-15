@@ -2,19 +2,18 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"os"
 
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat"
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/transport"
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/xdcrpc"
+	"github.com/chatmail/rpc-client-go/deltachat"
+	"github.com/chatmail/rpc-client-go/deltachat/transport"
+	"github.com/chatmail/rpc-client-go/deltachat/xdcrpc"
 )
 
 func onEvent(bot *deltachat.Bot, accId deltachat.AccountId, event deltachat.Event) {
 	switch ev := event.(type) {
 	case deltachat.EventWebxdcStatusUpdate:
-		xdcrpc.HandleMessage(bot.Rpc, accId, ev.MsgId, &API{}, ev.StatusUpdateSerial)
+		xdcrpc.HandleMessage(bot.Rpc, accId, ev.MsgId, ev.StatusUpdateSerial, &API{})
 	}
 }
 

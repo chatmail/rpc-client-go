@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/option"
+	"github.com/chatmail/rpc-client-go/deltachat/option"
 )
 
 type EventHandler func(bot *Bot, accId AccountId, event Event)

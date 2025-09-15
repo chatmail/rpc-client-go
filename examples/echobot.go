@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat"
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/transport"
+	"github.com/chatmail/rpc-client-go/deltachat"
+	"github.com/chatmail/rpc-client-go/deltachat/transport"
 )
 
 func logEvent(bot *deltachat.Bot, accId deltachat.AccountId, event deltachat.Event) {

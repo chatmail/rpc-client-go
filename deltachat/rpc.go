@@ -3,8 +3,8 @@ package deltachat
 import (
 	"context"
 
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/option"
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/transport"
+	"github.com/chatmail/rpc-client-go/deltachat/option"
+	"github.com/chatmail/rpc-client-go/deltachat/transport"
 )
 
 // Delta Chat RPC client. This is the root of the API.

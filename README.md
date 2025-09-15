@@ -1,17 +1,17 @@
 # Chatmail API for Go
 
-![Latest release](https://img.shields.io/github/v/tag/deltachat/deltachat-rpc-client-go?label=release)
-[![Go Reference](https://pkg.go.dev/badge/github.com/deltachat/deltachat-rpc-client-go.svg)](https://pkg.go.dev/github.com/deltachat/deltachat-rpc-client-go)
-[![CI](https://github.com/deltachat/deltachat-rpc-client-go/actions/workflows/ci.yml/badge.svg)](https://github.com/deltachat/deltachat-rpc-client-go/actions/workflows/ci.yml)
+![Latest release](https://img.shields.io/github/v/tag/chatmail/rpc-client-go?label=release)
+[![Go Reference](https://pkg.go.dev/badge/github.com/chatmail/rpc-client-go.svg)](https://pkg.go.dev/github.com/chatmail/rpc-client-go)
+[![CI](https://github.com/chatmail/rpc-client-go/actions/workflows/ci.yml/badge.svg)](https://github.com/chatmail/rpc-client-go/actions/workflows/ci.yml)
 ![Coverage](https://img.shields.io/badge/Coverage-72.0%25-brightgreen)
-[![Go Report Card](https://goreportcard.com/badge/github.com/deltachat/deltachat-rpc-client-go)](https://goreportcard.com/report/github.com/deltachat/deltachat-rpc-client-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/chatmail/rpc-client-go)](https://goreportcard.com/report/github.com/chatmail/rpc-client-go)
 
 Chatmail client & bot API for Golang.
 
 ## Install
 
 ```sh
-go get -u github.com/deltachat/deltachat-rpc-client-go
+go get -u github.com/chatmail/rpc-client-go
 ```
 
 ### Installing deltachat-rpc-server
@@ -36,8 +36,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat"
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/transport"
+	"github.com/chatmail/rpc-client-go/deltachat"
+	"github.com/chatmail/rpc-client-go/deltachat/transport"
 )
 
 func logEvent(bot *deltachat.Bot, accId deltachat.AccountId, event deltachat.Event) {
@@ -133,7 +133,7 @@ package main // replace with your package name
 import (
 	"testing"
 
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat"
+	"github.com/chatmail/rpc-client-go/deltachat"
 )
 
 var acfactory *deltachat.AcFactory
@@ -157,7 +157,7 @@ package main // replace with your package name
 import (
 	"testing"
 
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat"
+	"github.com/chatmail/rpc-client-go/deltachat"
 	"github.com/stretchr/testify/assert"
 )
 

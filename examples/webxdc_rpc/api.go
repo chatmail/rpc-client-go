@@ -2,7 +2,7 @@
 package main
 
 import (
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/xdcrpc"
+	"github.com/chatmail/rpc-client-go/deltachat/xdcrpc"
 )
 
 // You must put your available RPC API in a custom type

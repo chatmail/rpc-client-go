@@ -1,11 +1,9 @@
 module echobot
 
-go 1.21
-
-toolchain go1.21.0
+go 1.25
 
 require (
-	github.com/deltachat/deltachat-rpc-client-go v0.17.1-0.20230731132031-99c0b7b46920
+	github.com/chatmail/rpc-client-go v1.134.0
 	github.com/stretchr/testify v1.8.2
 )
 
@@ -19,4 +17,4 @@ require (
 )
 
 // this is needed only for tests, don't add it in your project's go.mod
-replace github.com/deltachat/deltachat-rpc-client-go => ../../
+replace github.com/chatmail/rpc-client-go => ../../

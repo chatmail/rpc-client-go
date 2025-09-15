@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/option"
+	"github.com/chatmail/rpc-client-go/deltachat/option"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

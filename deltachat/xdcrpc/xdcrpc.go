@@ -6,7 +6,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat"
+	"github.com/chatmail/rpc-client-go/deltachat"
 )
 
 type ErrorCode int

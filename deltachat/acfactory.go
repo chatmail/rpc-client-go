@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/option"
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/transport"
+	"github.com/chatmail/rpc-client-go/deltachat/option"
+	"github.com/chatmail/rpc-client-go/deltachat/transport"
 )
 
 // AcFactory facilitates unit testing Delta Chat clients/bots.
@@ -21,7 +21,7 @@ import (
 //
 //	import (
 //		"testing"
-//		"github.com/deltachat/deltachat-rpc-client-go/deltachat"
+//		"github.com/chatmail/rpc-client-go/deltachat"
 //	)
 
 //  var acfactory *deltachat.AcFactory

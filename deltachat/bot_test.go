@@ -3,8 +3,8 @@ package deltachat
 import (
 	"testing"
 
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/option"
-	"github.com/deltachat/deltachat-rpc-client-go/deltachat/transport"
+	"github.com/chatmail/rpc-client-go/deltachat/option"
+	"github.com/chatmail/rpc-client-go/deltachat/transport"
 	"github.com/stretchr/testify/assert"
 )
 
