@@ -4,18 +4,20 @@
 
 ## Added
 
-- `Account.SetUiConfig()`, `Account.GetUiConfig()`, `Bot.SetUiConfig()` and `Bot.GetUiConfig()`
+- `Bot.SetUiConfig()` and `Bot.GetUiConfig()`
+- new `MsgType`: `MsgVcard`
 
 ### Changed
 
-- dependencies: upgrade jrpc2 to version v1.0.0
+- dependencies: upgrade jrpc2 to version v1.1.2
 - breaking: `EventHandler` and `NewMsgHandler` now have an extra parameter "bot"
-- breaking: retrieve events via long polling (added to JSON-RPC server in: https://github.com/deltachat/deltachat-core-rust/pull/4341/)
-- breaking: minimum Delta Chat core version required v1.114.0
+- breaking: retrieve events via long polling (added to JSON-RPC server in: https://github.com/chatmail/core/pull/4341/)
+- breaking: minimum Chatmail core version required: 2.14.0
+- breaking: required golang version: 1.25
 
 ### Fixed
 
-- fix `Account.SetAvatar()`, allow to discard avatar
+- fix `Reactions` type
 
 ## v0.17.0
 

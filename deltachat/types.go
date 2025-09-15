@@ -206,7 +206,13 @@ type WebxdcMsgInfo struct {
 	InternetAccess bool
 }
 
+type Reaction struct {
+	Emoji      string
+	Count      uint32
+	IsFromSelf bool
+}
+
 type Reactions struct {
 	ReactionsByContact map[ContactId][]string
-	Reactions          map[string]int // Unique reactions and their count
+	Reactions          []Reaction
 }

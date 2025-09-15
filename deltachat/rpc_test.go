@@ -474,3 +474,30 @@ func TestChat_Groups(t *testing.T) {
 		assert.Nil(t, err)
 	})
 }
+
+func TestMsg_Reactions(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId AccountId) {
+		chatId, err := rpc.CreateGroupChat(accId, "test group", false)
+		require.Nil(t, err)
+
+		var msgId MsgId
+		msgId, err = rpc.SendMsg(accId, chatId, MsgData{Text: "test message"})
+		require.Nil(t, err)
+
+		_, err = rpc.SendReaction(accId, msgId, ":)")
+		require.Nil(t, err)
+
+		data, err2 := rpc.GetMessageReactions(accId, msgId)
+		require.Nil(t, err2)
+		reactions := data.Unwrap().Reactions
+		require.Len(t, reactions, 1)
+		require.Equal(t, reactions[0].Emoji, ":)")
+
+		msg, err := rpc.GetMessage(accId, msgId)
+		require.Nil(t, err)
+		reactions = msg.Reactions.Reactions
+		require.Len(t, reactions, 1)
+		require.Equal(t, reactions[0].Emoji, ":)")
+	})
+}
