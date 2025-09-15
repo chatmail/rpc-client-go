@@ -73,6 +73,7 @@ const (
 	MsgFile                MsgType = "File"
 	MsgVideochatInvitation MsgType = "VideochatInvitation"
 	MsgWebxdc              MsgType = "Webxdc"
+	MsgVcard               MsgType = "Vcard"
 
 	//System message types
 	SysmsgUnknown                  SysmsgType = "Unknown"

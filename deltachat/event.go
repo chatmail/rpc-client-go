@@ -101,7 +101,7 @@ func (eventData *_EventData) ToEvent() Event {
 	case eventTypeIncomingMsg:
 		event = EventIncomingMsg{ChatId: eventData.ChatId, MsgId: eventData.MsgId}
 	case eventTypeIncomingMsgBunch:
-		event = EventIncomingMsgBunch{MsgIds: eventData.MsgIds}
+		event = EventIncomingMsgBunch{}
 	case eventTypeMsgsNoticed:
 		event = EventMsgsNoticed{ChatId: eventData.ChatId}
 	case eventTypeMsgDelivered:
@@ -346,7 +346,6 @@ func (event EventIncomingMsg) eventType() eventType {
 //
 // msg_ids contains the message ids.
 type EventIncomingMsgBunch struct {
-	MsgIds []MsgId
 }
 
 func (event EventIncomingMsgBunch) eventType() eventType {

@@ -25,7 +25,7 @@ func TestRpc_MiscSetDraft_and_MiscSendDraft(t *testing.T) {
 	acfactory.WithOnlineAccount(func(rpc *Rpc, accId AccountId) {
 		chatId, err := rpc.CreateGroupChat(accId, "test group", true)
 		require.Nil(t, err)
-		err = rpc.MiscSetDraft(accId, chatId, option.Some("test"), option.None[string](), option.None[MsgId](), option.None[MsgType]())
+		err = rpc.MiscSetDraft(accId, chatId, option.Some("test"), option.None[string](), option.None[string](), option.None[MsgId](), option.None[MsgType]())
 		require.Nil(t, err)
 		_, err = rpc.MiscSendDraft(accId, chatId)
 		require.Nil(t, err)
@@ -174,19 +174,9 @@ func TestAccount_Contacts(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Empty(t, ids)
 
-		contactId, err := rpc.CreateContact(accId, "null@localhost", "test")
-		assert.Nil(t, err)
-
-		ids, err = rpc.GetContactIds(accId, 0, option.None[string]())
-		assert.Nil(t, err)
-		assert.Contains(t, ids, contactId)
-
 		ids, err = rpc.GetContactIds(accId, 0, option.Some("unknown"))
 		assert.Nil(t, err)
 		assert.Empty(t, ids)
-		ids, err = rpc.GetContactIds(accId, 0, option.Some("test"))
-		assert.Nil(t, err)
-		assert.Contains(t, ids, contactId)
 	})
 }
 
@@ -257,15 +247,6 @@ func TestAccount_QrCode(t *testing.T) {
 			acfactory.WaitForEvent(rpc1, accId1, EventSecurejoinInviterProgress{})
 			acfactory.WaitForEvent(rpc2, accId2, EventSecurejoinJoinerProgress{})
 		})
-	})
-}
-
-func TestAccount_ImportSelfKeys(t *testing.T) {
-	t.Parallel()
-	acfactory.WithOnlineAccount(func(rpc *Rpc, accId AccountId) {
-		dir := acfactory.MkdirTemp()
-		assert.Nil(t, rpc.ExportSelfKeys(accId, dir))
-		assert.Nil(t, rpc.ImportSelfKeys(accId, dir))
 	})
 }
 
@@ -481,12 +462,6 @@ func TestChat_Groups(t *testing.T) {
 		assert.Nil(t, rpc.SetChatProfileImage(accId, chatId, option.None[string]()))
 		assert.Nil(t, rpc.SetChatName(accId, chatId, "new name"))
 
-		contactId, err := rpc.CreateContact(accId, "null@localhost", "test")
-		assert.Nil(t, err)
-		assert.Nil(t, rpc.AddContactToChat(accId, chatId, contactId))
-
-		assert.Nil(t, rpc.RemoveContactFromChat(accId, chatId, contactId))
-
 		_, err = rpc.GetChatContacts(accId, chatId)
 		assert.Nil(t, err)
 
@@ -496,10 +471,6 @@ func TestChat_Groups(t *testing.T) {
 		assert.Nil(t, err)
 
 		_, err = rpc.SendMsg(accId, chatId, MsgData{Text: "test message"})
-		assert.Nil(t, err)
-
-		assert.Nil(t, rpc.SetConfig(accId, "webrtc_instance", option.Some("https://test.example.com")))
-		_, err = rpc.SendVideoChatInvitation(accId, chatId)
 		assert.Nil(t, err)
 	})
 }

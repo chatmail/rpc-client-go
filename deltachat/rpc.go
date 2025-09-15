@@ -171,17 +171,6 @@ func (rpc *Rpc) StopOngoingProcess(accountId AccountId) error {
 	return rpc.Transport.Call(rpc.Context, "stop_ongoing_process", accountId)
 }
 
-// Export public and private keys to the specified directory.
-// Note that the account does not have to be started.
-func (rpc *Rpc) ExportSelfKeys(accountId AccountId, path string) error {
-	return rpc.Transport.Call(rpc.Context, "export_self_keys", accountId, path, nil)
-}
-
-// Import private keys found in the specified directory.
-func (rpc *Rpc) ImportSelfKeys(accountId AccountId, path string) error {
-	return rpc.Transport.Call(rpc.Context, "import_self_keys", accountId, path, nil)
-}
-
 // Returns the message IDs of all fresh messages of any chat.
 // Typically used for implementing notification summaries
 // or badge counters e.g. on the app icon.
@@ -935,12 +924,6 @@ func (rpc *Rpc) GetDraft(accountId AccountId, chatId ChatId) (option.Option[MsgS
 	return msg, err
 }
 
-func (rpc *Rpc) SendVideoChatInvitation(accountId AccountId, chatId ChatId) (MsgId, error) {
-	var id MsgId
-	err := rpc.Transport.CallResult(rpc.Context, &id, "send_videochat_invitation", accountId, chatId)
-	return id, err
-}
-
 // ---------------------------------------------
 //           misc prototyping functions
 //       that might get removed later again
@@ -963,8 +946,8 @@ func (rpc *Rpc) MiscSendTextMessage(accountId AccountId, chatId ChatId, text str
 // the better version should support:
 // - changing viewtype to enable/disable compression
 // - keeping same message id as long as attachment does not change for webxdc messages
-func (rpc *Rpc) MiscSetDraft(accountId AccountId, chatId ChatId, text option.Option[string], file option.Option[string], quotedMessageId option.Option[MsgId], viewType option.Option[MsgType]) error {
-	return rpc.Transport.Call(rpc.Context, "misc_set_draft", accountId, chatId, text, file, quotedMessageId, viewType)
+func (rpc *Rpc) MiscSetDraft(accountId AccountId, chatId ChatId, text option.Option[string], file option.Option[string], filename option.Option[string], quotedMessageId option.Option[MsgId], viewType option.Option[MsgType]) error {
+	return rpc.Transport.Call(rpc.Context, "misc_set_draft", accountId, chatId, text, file, filename, quotedMessageId, viewType)
 }
 
 // send the chat's current set draft
