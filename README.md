@@ -16,13 +16,15 @@ go get -u github.com/deltachat/deltachat-rpc-client-go
 
 ### Installing deltachat-rpc-server
 
-This package depends on a standalone Delta Chat RPC server `deltachat-rpc-server` program that must be
-available in your `PATH`. For installation instructions check:
-https://github.com/deltachat/deltachat-core-rust/tree/master/deltachat-rpc-server
+This package depends on a standalone Delta Chat RPC server
+`deltachat-rpc-server` program that must be available in your
+`PATH`. For installation instructions check:
+https://github.com/chatmail/core/tree/main/deltachat-rpc-server
 
 ## Usage
 
-Example echo-bot that will echo back any text message you send to it:
+Example echo-bot that will echo back any text message you send to
+it:
 
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=./examples/echobot_full/echobot.go) -->
 <!-- The below code snippet is automatically added from ./examples/echobot_full/echobot.go -->
@@ -98,17 +100,20 @@ for more examples.
 
 ## Developing bots faster ⚡
 
-If what you want is to develop bots, you probably should use this library together with
-[deltabot-cli-go](https://github.com/deltachat-bot/deltabot-cli-go/), it takes away the
-repetitive process of creating the bot CLI and let you focus on writing your message processing logic.
+If what you want is to develop bots, you probably should use this
+library together with [deltabot-cli-go](deltabotcli), it takes
+away the repetitive process of creating the bot CLI and let you
+focus on writing your message processing logic.
 
 ## Testing your code
 
-`deltachat.AcFactory` is provided to help users of this library to unit-test their code.
+`deltachat.AcFactory` is provided to help users of this library
+to unit-test their code.
 
 ### Local mail server
 
-You need to have a local fake email server running. The easiest way to do that is with Docker:
+You need to have a local fake email server running. The easiest
+way to do that is with Docker:
 
 ```
 $ docker pull ghcr.io/deltachat/mail-server-tester:release
@@ -216,3 +221,6 @@ Check the complete example at [examples/echobot_full](./examples/echobot_full)
 ## Contributing
 
 Pull requests are welcome! check [CONTRIBUTING.md](./CONTRIBUTING.md)
+
+
+[deltabotcli]: https://github.com/deltachat-bot/deltabot-cli-go/
