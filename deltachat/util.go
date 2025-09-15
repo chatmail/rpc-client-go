@@ -64,7 +64,7 @@ func parseMemberAddRemove(rpc Rpc, accountId AccountId, msg *MsgSnapshot, action
 		}
 	}
 
-	return 0, 0, fmt.Errorf("System message does not match")
+	return 0, 0, fmt.Errorf("system message does not match")
 }
 
 func extractContact(rpc Rpc, accountId AccountId, text string) (ContactId, error) {

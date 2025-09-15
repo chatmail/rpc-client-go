@@ -63,99 +63,99 @@ type _EventData struct {
 	Key                string
 }
 
-func (self *_EventData) ToEvent() Event {
+func (eventData *_EventData) ToEvent() Event {
 	var event Event
-	switch self.Kind {
+	switch eventData.Kind {
 	case eventTypeInfo:
-		event = EventInfo{Msg: self.Msg}
+		event = EventInfo{Msg: eventData.Msg}
 	case eventTypeSmtpConnected:
-		event = EventSmtpConnected{Msg: self.Msg}
+		event = EventSmtpConnected{Msg: eventData.Msg}
 	case eventTypeImapConnected:
-		event = EventImapConnected{Msg: self.Msg}
+		event = EventImapConnected{Msg: eventData.Msg}
 	case eventTypeSmtpMessageSent:
-		event = EventSmtpMessageSent{Msg: self.Msg}
+		event = EventSmtpMessageSent{Msg: eventData.Msg}
 	case eventTypeImapMessageDeleted:
-		event = EventImapMessageDeleted{Msg: self.Msg}
+		event = EventImapMessageDeleted{Msg: eventData.Msg}
 	case eventTypeImapMessageMoved:
-		event = EventImapMessageMoved{Msg: self.Msg}
+		event = EventImapMessageMoved{Msg: eventData.Msg}
 	case eventTypeImapInboxIdle:
 		event = EventImapInboxIdle{}
 	case eventTypeNewBlobFile:
-		event = EventNewBlobFile{File: self.File}
+		event = EventNewBlobFile{File: eventData.File}
 	case eventTypeDeletedBlobFile:
-		event = EventDeletedBlobFile{File: self.File}
+		event = EventDeletedBlobFile{File: eventData.File}
 	case eventTypeWarning:
-		event = EventWarning{Msg: self.Msg}
+		event = EventWarning{Msg: eventData.Msg}
 	case eventTypeError:
-		event = EventError{Msg: self.Msg}
+		event = EventError{Msg: eventData.Msg}
 	case eventTypeErrorSelfNotInGroup:
-		event = EventErrorSelfNotInGroup{Msg: self.Msg}
+		event = EventErrorSelfNotInGroup{Msg: eventData.Msg}
 	case eventTypeMsgsChanged:
-		event = EventMsgsChanged{ChatId: self.ChatId, MsgId: self.MsgId}
+		event = EventMsgsChanged{ChatId: eventData.ChatId, MsgId: eventData.MsgId}
 	case eventTypeReactionsChanged:
 		event = EventReactionsChanged{
-			ChatId:    self.ChatId,
-			MsgId:     self.MsgId,
-			ContactId: self.ContactId,
+			ChatId:    eventData.ChatId,
+			MsgId:     eventData.MsgId,
+			ContactId: eventData.ContactId,
 		}
 	case eventTypeIncomingMsg:
-		event = EventIncomingMsg{ChatId: self.ChatId, MsgId: self.MsgId}
+		event = EventIncomingMsg{ChatId: eventData.ChatId, MsgId: eventData.MsgId}
 	case eventTypeIncomingMsgBunch:
-		event = EventIncomingMsgBunch{MsgIds: self.MsgIds}
+		event = EventIncomingMsgBunch{MsgIds: eventData.MsgIds}
 	case eventTypeMsgsNoticed:
-		event = EventMsgsNoticed{ChatId: self.ChatId}
+		event = EventMsgsNoticed{ChatId: eventData.ChatId}
 	case eventTypeMsgDelivered:
-		event = EventMsgDelivered{ChatId: self.ChatId, MsgId: self.MsgId}
+		event = EventMsgDelivered{ChatId: eventData.ChatId, MsgId: eventData.MsgId}
 	case eventTypeMsgFailed:
-		event = EventMsgFailed{ChatId: self.ChatId, MsgId: self.MsgId}
+		event = EventMsgFailed{ChatId: eventData.ChatId, MsgId: eventData.MsgId}
 	case eventTypeMsgRead:
-		event = EventMsgRead{ChatId: self.ChatId, MsgId: self.MsgId}
+		event = EventMsgRead{ChatId: eventData.ChatId, MsgId: eventData.MsgId}
 	case eventTypeMsgDeleted:
-		event = EventMsgDeleted{ChatId: self.ChatId, MsgId: self.MsgId}
+		event = EventMsgDeleted{ChatId: eventData.ChatId, MsgId: eventData.MsgId}
 	case eventTypeChatModified:
-		event = EventChatModified{ChatId: self.ChatId}
+		event = EventChatModified{ChatId: eventData.ChatId}
 	case eventTypeChatEphemeralTimerModified:
 		event = EventChatEphemeralTimerModified{
-			ChatId: self.ChatId,
-			Timer:  self.Timer,
+			ChatId: eventData.ChatId,
+			Timer:  eventData.Timer,
 		}
 	case eventTypeContactsChanged:
-		event = EventContactsChanged{ContactId: self.ContactId}
+		event = EventContactsChanged{ContactId: eventData.ContactId}
 	case eventTypeLocationChanged:
-		event = EventLocationChanged{ContactId: self.ContactId}
+		event = EventLocationChanged{ContactId: eventData.ContactId}
 	case eventTypeConfigureProgress:
-		event = EventConfigureProgress{Progress: self.Progress, Comment: self.Comment}
+		event = EventConfigureProgress{Progress: eventData.Progress, Comment: eventData.Comment}
 	case eventTypeImexProgress:
-		event = EventImexProgress{Progress: self.Progress}
+		event = EventImexProgress{Progress: eventData.Progress}
 	case eventTypeImexFileWritten:
-		event = EventImexFileWritten{Path: self.Path}
+		event = EventImexFileWritten{Path: eventData.Path}
 	case eventTypeSecurejoinInviterProgress:
 		event = EventSecurejoinInviterProgress{
-			ContactId: self.ContactId,
-			Progress:  self.Progress,
+			ContactId: eventData.ContactId,
+			Progress:  eventData.Progress,
 		}
 	case eventTypeSecurejoinJoinerProgress:
 		event = EventSecurejoinJoinerProgress{
-			ContactId: self.ContactId,
-			Progress:  self.Progress,
+			ContactId: eventData.ContactId,
+			Progress:  eventData.Progress,
 		}
 	case eventTypeConnectivityChanged:
 		event = EventConnectivityChanged{}
 	case eventTypeSelfavatarChanged:
 		event = EventSelfavatarChanged{}
 	case eventTypeConfigSynced:
-		event = EventConfigSynced{Key: self.Key}
+		event = EventConfigSynced{Key: eventData.Key}
 	case eventTypeWebxdcStatusUpdate:
 		event = EventWebxdcStatusUpdate{
-			MsgId:              self.MsgId,
-			StatusUpdateSerial: self.StatusUpdateSerial,
+			MsgId:              eventData.MsgId,
+			StatusUpdateSerial: eventData.StatusUpdateSerial,
 		}
 	case eventTypeWebxdcInstanceDeleted:
-		event = EventWebxdcInstanceDeleted{MsgId: self.MsgId}
+		event = EventWebxdcInstanceDeleted{MsgId: eventData.MsgId}
 	case eventTypeAccountsBackgroundFetchDone:
 		event = EventAccountsBackgroundFetchDone{}
 	default:
-		event = UnknownEvent{Kind: self.Kind}
+		event = UnknownEvent{Kind: eventData.Kind}
 	}
 	return event
 }
@@ -170,7 +170,7 @@ type UnknownEvent struct {
 	Kind eventType
 }
 
-func (self UnknownEvent) eventType() eventType {
+func (event UnknownEvent) eventType() eventType {
 	return eventTypeUnknown
 }
 
@@ -182,7 +182,7 @@ type EventInfo struct {
 	Msg string
 }
 
-func (self EventInfo) eventType() eventType {
+func (event EventInfo) eventType() eventType {
 	return eventTypeInfo
 }
 
@@ -191,7 +191,7 @@ type EventSmtpConnected struct {
 	Msg string
 }
 
-func (self EventSmtpConnected) eventType() eventType {
+func (event EventSmtpConnected) eventType() eventType {
 	return eventTypeSmtpConnected
 }
 
@@ -200,7 +200,7 @@ type EventImapConnected struct {
 	Msg string
 }
 
-func (self EventImapConnected) eventType() eventType {
+func (event EventImapConnected) eventType() eventType {
 	return eventTypeImapConnected
 }
 
@@ -209,7 +209,7 @@ type EventSmtpMessageSent struct {
 	Msg string
 }
 
-func (self EventSmtpMessageSent) eventType() eventType {
+func (event EventSmtpMessageSent) eventType() eventType {
 	return eventTypeSmtpMessageSent
 }
 
@@ -218,7 +218,7 @@ type EventImapMessageDeleted struct {
 	Msg string
 }
 
-func (self EventImapMessageDeleted) eventType() eventType {
+func (event EventImapMessageDeleted) eventType() eventType {
 	return eventTypeImapMessageDeleted
 }
 
@@ -227,14 +227,14 @@ type EventImapMessageMoved struct {
 	Msg string
 }
 
-func (self EventImapMessageMoved) eventType() eventType {
+func (event EventImapMessageMoved) eventType() eventType {
 	return eventTypeImapMessageMoved
 }
 
 // Emitted before going into IDLE on the Inbox folder.
 type EventImapInboxIdle struct{}
 
-func (self EventImapInboxIdle) eventType() eventType {
+func (event EventImapInboxIdle) eventType() eventType {
 	return eventTypeImapInboxIdle
 }
 
@@ -243,7 +243,7 @@ type EventNewBlobFile struct {
 	File string
 }
 
-func (self EventNewBlobFile) eventType() eventType {
+func (event EventNewBlobFile) eventType() eventType {
 	return eventTypeNewBlobFile
 }
 
@@ -252,7 +252,7 @@ type EventDeletedBlobFile struct {
 	File string
 }
 
-func (self EventDeletedBlobFile) eventType() eventType {
+func (event EventDeletedBlobFile) eventType() eventType {
 	return eventTypeDeletedBlobFile
 }
 
@@ -264,7 +264,7 @@ type EventWarning struct {
 	Msg string
 }
 
-func (self EventWarning) eventType() eventType {
+func (event EventWarning) eventType() eventType {
 	return eventTypeWarning
 }
 
@@ -282,7 +282,7 @@ type EventError struct {
 	Msg string
 }
 
-func (self EventError) eventType() eventType {
+func (event EventError) eventType() eventType {
 	return eventTypeError
 }
 
@@ -295,7 +295,7 @@ type EventErrorSelfNotInGroup struct {
 	Msg string
 }
 
-func (self EventErrorSelfNotInGroup) eventType() eventType {
+func (event EventErrorSelfNotInGroup) eventType() eventType {
 	return eventTypeErrorSelfNotInGroup
 }
 
@@ -312,7 +312,7 @@ type EventMsgsChanged struct {
 	MsgId  MsgId
 }
 
-func (self EventMsgsChanged) eventType() eventType {
+func (event EventMsgsChanged) eventType() eventType {
 	return eventTypeMsgsChanged
 }
 
@@ -323,7 +323,7 @@ type EventReactionsChanged struct {
 	ContactId ContactId
 }
 
-func (self EventReactionsChanged) eventType() eventType {
+func (event EventReactionsChanged) eventType() eventType {
 	return eventTypeReactionsChanged
 }
 
@@ -336,7 +336,7 @@ type EventIncomingMsg struct {
 	MsgId  MsgId
 }
 
-func (self EventIncomingMsg) eventType() eventType {
+func (event EventIncomingMsg) eventType() eventType {
 	return eventTypeIncomingMsg
 }
 
@@ -349,7 +349,7 @@ type EventIncomingMsgBunch struct {
 	MsgIds []MsgId
 }
 
-func (self EventIncomingMsgBunch) eventType() eventType {
+func (event EventIncomingMsgBunch) eventType() eventType {
 	return eventTypeIncomingMsgBunch
 }
 
@@ -359,7 +359,7 @@ type EventMsgsNoticed struct {
 	ChatId ChatId
 }
 
-func (self EventMsgsNoticed) eventType() eventType {
+func (event EventMsgsNoticed) eventType() eventType {
 	return eventTypeMsgsNoticed
 }
 
@@ -370,7 +370,7 @@ type EventMsgDelivered struct {
 	MsgId  MsgId
 }
 
-func (self EventMsgDelivered) eventType() eventType {
+func (event EventMsgDelivered) eventType() eventType {
 	return eventTypeMsgDelivered
 }
 
@@ -381,7 +381,7 @@ type EventMsgFailed struct {
 	MsgId  MsgId
 }
 
-func (self EventMsgFailed) eventType() eventType {
+func (event EventMsgFailed) eventType() eventType {
 	return eventTypeMsgFailed
 }
 
@@ -392,7 +392,7 @@ type EventMsgRead struct {
 	MsgId  MsgId
 }
 
-func (self EventMsgRead) eventType() eventType {
+func (event EventMsgRead) eventType() eventType {
 	return eventTypeMsgRead
 }
 
@@ -402,7 +402,7 @@ type EventMsgDeleted struct {
 	MsgId  MsgId
 }
 
-func (self EventMsgDeleted) eventType() eventType {
+func (event EventMsgDeleted) eventType() eventType {
 	return eventTypeMsgDeleted
 }
 
@@ -417,7 +417,7 @@ type EventChatModified struct {
 	ChatId ChatId
 }
 
-func (self EventChatModified) eventType() eventType {
+func (event EventChatModified) eventType() eventType {
 	return eventTypeChatModified
 }
 
@@ -427,7 +427,7 @@ type EventChatEphemeralTimerModified struct {
 	Timer  int
 }
 
-func (self EventChatEphemeralTimerModified) eventType() eventType {
+func (event EventChatEphemeralTimerModified) eventType() eventType {
 	return eventTypeChatEphemeralTimerModified
 }
 
@@ -437,7 +437,7 @@ type EventContactsChanged struct {
 	ContactId ContactId
 }
 
-func (self EventContactsChanged) eventType() eventType {
+func (event EventContactsChanged) eventType() eventType {
 	return eventTypeContactsChanged
 }
 
@@ -447,7 +447,7 @@ type EventLocationChanged struct {
 	ContactId ContactId
 }
 
-func (self EventLocationChanged) eventType() eventType {
+func (event EventLocationChanged) eventType() eventType {
 	return eventTypeLocationChanged
 }
 
@@ -461,7 +461,7 @@ type EventConfigureProgress struct {
 	Comment string
 }
 
-func (self EventConfigureProgress) eventType() eventType {
+func (event EventConfigureProgress) eventType() eventType {
 	return eventTypeConfigureProgress
 }
 
@@ -472,7 +472,7 @@ type EventImexProgress struct {
 	Progress uint
 }
 
-func (self EventImexProgress) eventType() eventType {
+func (event EventImexProgress) eventType() eventType {
 	return eventTypeImexProgress
 }
 
@@ -485,7 +485,7 @@ type EventImexFileWritten struct {
 	Path string
 }
 
-func (self EventImexFileWritten) eventType() eventType {
+func (event EventImexFileWritten) eventType() eventType {
 	return eventTypeImexFileWritten
 }
 
@@ -506,7 +506,7 @@ type EventSecurejoinInviterProgress struct {
 	Progress uint
 }
 
-func (self EventSecurejoinInviterProgress) eventType() eventType {
+func (event EventSecurejoinInviterProgress) eventType() eventType {
 	return eventTypeSecurejoinInviterProgress
 }
 
@@ -524,7 +524,7 @@ type EventSecurejoinJoinerProgress struct {
 	Progress uint
 }
 
-func (self EventSecurejoinJoinerProgress) eventType() eventType {
+func (event EventSecurejoinJoinerProgress) eventType() eventType {
 	return eventTypeSecurejoinJoinerProgress
 }
 
@@ -534,14 +534,14 @@ func (self EventSecurejoinJoinerProgress) eventType() eventType {
 // Account.ConnectivityHtml() for details.
 type EventConnectivityChanged struct{}
 
-func (self EventConnectivityChanged) eventType() eventType {
+func (event EventConnectivityChanged) eventType() eventType {
 	return eventTypeConnectivityChanged
 }
 
 // The user's avatar changed.
 type EventSelfavatarChanged struct{}
 
-func (self EventSelfavatarChanged) eventType() eventType {
+func (event EventSelfavatarChanged) eventType() eventType {
 	return eventTypeSelfavatarChanged
 }
 
@@ -552,7 +552,7 @@ type EventConfigSynced struct {
 	Key string
 }
 
-func (self EventConfigSynced) eventType() eventType {
+func (event EventConfigSynced) eventType() eventType {
 	return eventTypeConfigSynced
 }
 
@@ -562,7 +562,7 @@ type EventWebxdcStatusUpdate struct {
 	StatusUpdateSerial uint
 }
 
-func (self EventWebxdcStatusUpdate) eventType() eventType {
+func (event EventWebxdcStatusUpdate) eventType() eventType {
 	return eventTypeWebxdcStatusUpdate
 }
 
@@ -571,7 +571,7 @@ type EventWebxdcInstanceDeleted struct {
 	MsgId MsgId
 }
 
-func (self EventWebxdcInstanceDeleted) eventType() eventType {
+func (event EventWebxdcInstanceDeleted) eventType() eventType {
 	return eventTypeWebxdcInstanceDeleted
 }
 
@@ -582,6 +582,6 @@ func (self EventWebxdcInstanceDeleted) eventType() eventType {
 // This event is only emitted by the account manager
 type EventAccountsBackgroundFetchDone struct{}
 
-func (self EventAccountsBackgroundFetchDone) eventType() eventType {
+func (event EventAccountsBackgroundFetchDone) eventType() eventType {
 	return eventTypeAccountsBackgroundFetchDone
 }

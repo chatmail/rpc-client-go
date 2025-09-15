@@ -61,7 +61,7 @@ type StatusUpdate[T any] struct {
 type SelfMessageErr struct {
 }
 
-func (self *SelfMessageErr) Error() string {
+func (error *SelfMessageErr) Error() string {
 	return "RPC message seems to be from self"
 }
 
@@ -182,7 +182,7 @@ func GetUpdate(rpc *deltachat.Rpc, accId deltachat.AccountId, msgId deltachat.Ms
 	if len(rawUpdates) > 0 {
 		return rawUpdates[0], nil
 	}
-	return nil, errors.New("No new status update was found")
+	return nil, errors.New("no new status update was found")
 }
 
 // Send a WebXDC status update

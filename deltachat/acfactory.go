@@ -47,9 +47,9 @@ type AcFactory struct {
 //
 // If the test mail server has not standard configuration, you should set the custom configuration
 // here.
-func (self *AcFactory) TearUp() {
-	if self.DefaultCfg == nil {
-		self.DefaultCfg = map[string]option.Option[string]{
+func (factory *AcFactory) TearUp() {
+	if factory.DefaultCfg == nil {
+		factory.DefaultCfg = map[string]option.Option[string]{
 			"mail_server":   option.Some("localhost"),
 			"send_server":   option.Some("localhost"),
 			"mail_port":     option.Some("3143"),
@@ -60,27 +60,29 @@ func (self *AcFactory) TearUp() {
 		}
 
 	}
-	self.startTime = time.Now().Unix()
+	factory.startTime = time.Now().Unix()
 
 	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		panic(err)
 	}
-	self.tempDir = dir
+	factory.tempDir = dir
 
-	self.tearUp = true
+	factory.tearUp = true
 }
 
 // Do cleanup, removing temporary directories and files created by the configured test accounts.
 // Usually TearDown() is called with defer immediately after the creation of the AcFactory instance.
-func (self *AcFactory) TearDown() {
-	self.ensureTearUp()
-	os.RemoveAll(self.tempDir)
+func (factory *AcFactory) TearDown() {
+	factory.ensureTearUp()
+	if err := os.RemoveAll(factory.tempDir); err != nil {
+		panic(err)
+	}
 }
 
 // MkdirTemp creates a new temporary directory. The directory is automatically removed on TearDown().
-func (self *AcFactory) MkdirTemp() string {
-	dir, err := os.MkdirTemp(self.tempDir, "")
+func (factory *AcFactory) MkdirTemp() string {
+	dir, err := os.MkdirTemp(factory.tempDir, "")
 	if err != nil {
 		panic(err)
 	}
@@ -88,13 +90,13 @@ func (self *AcFactory) MkdirTemp() string {
 }
 
 // Call the given function passing a new Rpc as parameter.
-func (self *AcFactory) WithRpc(callback func(*Rpc)) {
-	self.ensureTearUp()
+func (factory *AcFactory) WithRpc(callback func(*Rpc)) {
+	factory.ensureTearUp()
 	trans := transport.NewIOTransport()
-	if !self.Debug {
+	if !factory.Debug {
 		trans.Stderr = nil
 	}
-	dir := self.MkdirTemp()
+	dir := factory.MkdirTemp()
 	trans.AccountsDir = filepath.Join(dir, "accounts")
 	err := trans.Open()
 	if err != nil {
@@ -106,25 +108,25 @@ func (self *AcFactory) WithRpc(callback func(*Rpc)) {
 }
 
 // Get a new Account that is not yet configured, but it is ready to be configured.
-func (self *AcFactory) WithUnconfiguredAccount(callback func(*Rpc, AccountId)) {
-	self.WithRpc(func(rpc *Rpc) {
+func (factory *AcFactory) WithUnconfiguredAccount(callback func(*Rpc, AccountId)) {
+	factory.WithRpc(func(rpc *Rpc) {
 		accId, err := rpc.AddAccount()
 		if err != nil {
 			panic(err)
 		}
-		self.serialMutex.Lock()
-		self.serial++
-		serial := self.serial
-		self.serialMutex.Unlock()
+		factory.serialMutex.Lock()
+		factory.serial++
+		serial := factory.serial
+		factory.serialMutex.Unlock()
 
-		if len(self.DefaultCfg) != 0 {
-			err = rpc.BatchSetConfig(accId, self.DefaultCfg)
+		if len(factory.DefaultCfg) != 0 {
+			err = rpc.BatchSetConfig(accId, factory.DefaultCfg)
 			if err != nil {
 				panic(err)
 			}
 		}
 		err = rpc.BatchSetConfig(accId, map[string]option.Option[string]{
-			"addr":    option.Some(fmt.Sprintf("acc%v.%v@localhost", serial, self.startTime)),
+			"addr":    option.Some(fmt.Sprintf("acc%v.%v@localhost", serial, factory.startTime)),
 			"mail_pw": option.Some(fmt.Sprintf("password%v", serial)),
 		})
 		if err != nil {
@@ -136,8 +138,8 @@ func (self *AcFactory) WithUnconfiguredAccount(callback func(*Rpc, AccountId)) {
 }
 
 // Get a new account configured and with I/O already started.
-func (self *AcFactory) WithOnlineAccount(callback func(*Rpc, AccountId)) {
-	self.WithUnconfiguredAccount(func(rpc *Rpc, accId AccountId) {
+func (factory *AcFactory) WithOnlineAccount(callback func(*Rpc, AccountId)) {
+	factory.WithUnconfiguredAccount(func(rpc *Rpc, accId AccountId) {
 		err := rpc.Configure(accId)
 		if err != nil {
 			panic(err)
@@ -148,16 +150,16 @@ func (self *AcFactory) WithOnlineAccount(callback func(*Rpc, AccountId)) {
 }
 
 // Get a new bot not yet configured, but its account is ready to be configured.
-func (self *AcFactory) WithUnconfiguredBot(callback func(*Bot, AccountId)) {
-	self.WithUnconfiguredAccount(func(rpc *Rpc, accId AccountId) {
+func (factory *AcFactory) WithUnconfiguredBot(callback func(*Bot, AccountId)) {
+	factory.WithUnconfiguredAccount(func(rpc *Rpc, accId AccountId) {
 		bot := NewBot(rpc)
 		callback(bot, accId)
 	})
 }
 
 // Get a new bot configured and with its account I/O already started. The bot is not running yet.
-func (self *AcFactory) WithOnlineBot(callback func(*Bot, AccountId)) {
-	self.WithUnconfiguredAccount(func(rpc *Rpc, accId AccountId) {
+func (factory *AcFactory) WithOnlineBot(callback func(*Bot, AccountId)) {
+	factory.WithUnconfiguredAccount(func(rpc *Rpc, accId AccountId) {
 		addr, _ := rpc.GetConfig(accId, "addr")
 		pass, _ := rpc.GetConfig(accId, "mail_pw")
 		bot := NewBot(rpc)
@@ -172,14 +174,11 @@ func (self *AcFactory) WithOnlineBot(callback func(*Bot, AccountId)) {
 
 // Get a new bot configured and already listening to new events/messages.
 // It is ensured that Bot.IsRunning() is true for the returned bot.
-func (self *AcFactory) WithRunningBot(callback func(*Bot, AccountId)) {
-	self.WithOnlineBot(func(bot *Bot, accId AccountId) {
+func (factory *AcFactory) WithRunningBot(callback func(*Bot, AccountId)) {
+	factory.WithOnlineBot(func(bot *Bot, accId AccountId) {
 		var err error
 		go func() { err = bot.Run() }()
-		for {
-			if bot.IsRunning() {
-				break
-			}
+		for !bot.IsRunning() {
 			if err != nil {
 				panic(err)
 			}
@@ -190,8 +189,8 @@ func (self *AcFactory) WithRunningBot(callback func(*Bot, AccountId)) {
 }
 
 // Wait for the next incoming message in the given account.
-func (self *AcFactory) NextMsg(rpc *Rpc, accId AccountId) *MsgSnapshot {
-	event := self.WaitForEvent(rpc, accId, EventIncomingMsg{}).(EventIncomingMsg)
+func (factory *AcFactory) NextMsg(rpc *Rpc, accId AccountId) *MsgSnapshot {
+	event := factory.WaitForEvent(rpc, accId, EventIncomingMsg{}).(EventIncomingMsg)
 	msg, err := rpc.GetMessage(accId, event.MsgId)
 	if err != nil {
 		panic(err)
@@ -200,14 +199,14 @@ func (self *AcFactory) NextMsg(rpc *Rpc, accId AccountId) *MsgSnapshot {
 }
 
 // Introduce two accounts to each other creating a 1:1 chat between them and exchanging messages.
-func (self *AcFactory) IntroduceEachOther(rpc1 *Rpc, accId1 AccountId, rpc2 *Rpc, accId2 AccountId) {
-	chatId := self.CreateChat(rpc1, accId1, rpc2, accId2)
+func (factory *AcFactory) IntroduceEachOther(rpc1 *Rpc, accId1 AccountId, rpc2 *Rpc, accId2 AccountId) {
+	chatId := factory.CreateChat(rpc1, accId1, rpc2, accId2)
 	_, err := rpc1.MiscSendTextMessage(accId1, chatId, "hi")
 	if err != nil {
 		panic(err)
 	}
-	self.WaitForEventInChat(rpc1, accId1, chatId, EventMsgsChanged{})
-	snapshot := self.NextMsg(rpc2, accId2)
+	factory.WaitForEventInChat(rpc1, accId1, chatId, EventMsgsChanged{})
+	snapshot := factory.NextMsg(rpc2, accId2)
 	if snapshot.Text != "hi" {
 		panic("unexpected message: " + snapshot.Text)
 	}
@@ -220,15 +219,15 @@ func (self *AcFactory) IntroduceEachOther(rpc1 *Rpc, accId1 AccountId, rpc2 *Rpc
 	if err != nil {
 		panic(err)
 	}
-	self.WaitForEventInChat(rpc2, accId2, snapshot.ChatId, EventMsgsChanged{})
-	snapshot = self.NextMsg(rpc1, accId1)
+	factory.WaitForEventInChat(rpc2, accId2, snapshot.ChatId, EventMsgsChanged{})
+	snapshot = factory.NextMsg(rpc1, accId1)
 	if snapshot.Text != "hello" {
 		panic("unexpected message: " + snapshot.Text)
 	}
 }
 
 // Create a 1:1 chat with accId2 in the chatlist of accId1.
-func (self *AcFactory) CreateChat(rpc1 *Rpc, accId1 AccountId, rpc2 *Rpc, accId2 AccountId) ChatId {
+func (factory *AcFactory) CreateChat(rpc1 *Rpc, accId1 AccountId, rpc2 *Rpc, accId2 AccountId) ChatId {
 	addr2, err := rpc2.GetConfig(accId2, "configured_addr")
 	if err != nil {
 		panic(err)
@@ -248,9 +247,9 @@ func (self *AcFactory) CreateChat(rpc1 *Rpc, accId1 AccountId, rpc2 *Rpc, accId2
 }
 
 // Get a path to an image file that can be used for testing.
-func (self *AcFactory) TestImage() string {
+func (factory *AcFactory) TestImage() string {
 	var img string
-	self.WithOnlineAccount(func(rpc *Rpc, accId AccountId) {
+	factory.WithOnlineAccount(func(rpc *Rpc, accId AccountId) {
 		chatId, err := rpc.CreateChatByContactId(accId, ContactSelf)
 		if err != nil {
 			panic(err)
@@ -265,17 +264,26 @@ func (self *AcFactory) TestImage() string {
 }
 
 // Get a path to a Webxdc file that can be used for testing.
-func (self *AcFactory) TestWebxdc() string {
-	self.ensureTearUp()
-	dir := self.MkdirTemp()
+func (factory *AcFactory) TestWebxdc() string {
+	factory.ensureTearUp()
+	dir := factory.MkdirTemp()
 	path := filepath.Join(dir, "test.xdc")
 	zipFile, err := os.Create(path)
 	if err != nil {
 		panic(err)
 	}
-	defer zipFile.Close()
+	defer func() {
+		if err := zipFile.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
 	writer := zip.NewWriter(zipFile)
-	defer writer.Close()
+	defer func() {
+		if err := writer.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	var files = []struct {
 		Name, Body string
@@ -304,9 +312,9 @@ func (self *AcFactory) TestWebxdc() string {
 
 // Wait for an event of the same type as the given event, the event must belong to the chat
 // with the given ChatId.
-func (self *AcFactory) WaitForEventInChat(rpc *Rpc, accId AccountId, chatId ChatId, event Event) Event {
+func (factory *AcFactory) WaitForEventInChat(rpc *Rpc, accId AccountId, chatId ChatId, event Event) Event {
 	for {
-		event = self.WaitForEvent(rpc, accId, event)
+		event = factory.WaitForEvent(rpc, accId, event)
 		if getChatId(event) == chatId {
 			return event
 		}
@@ -314,7 +322,7 @@ func (self *AcFactory) WaitForEventInChat(rpc *Rpc, accId AccountId, chatId Chat
 }
 
 // Wait for an event of the same type as the given event.
-func (self *AcFactory) WaitForEvent(rpc *Rpc, accId AccountId, event Event) Event {
+func (factory *AcFactory) WaitForEvent(rpc *Rpc, accId AccountId, event Event) Event {
 	for {
 		accId2, ev, err := rpc.GetNextEvent()
 		if err != nil {
@@ -325,19 +333,19 @@ func (self *AcFactory) WaitForEvent(rpc *Rpc, accId AccountId, event Event) Even
 			continue
 		}
 		if ev.eventType() == event.eventType() {
-			if self.Debug {
+			if factory.Debug {
 				fmt.Printf("Got awaited event %v\n", ev.eventType())
 			}
 			return ev
 		}
-		if self.Debug {
+		if factory.Debug {
 			fmt.Printf("Waiting for event %v, got: %v\n", event.eventType(), ev.eventType())
 		}
 	}
 }
 
-func (self *AcFactory) ensureTearUp() {
-	if !self.tearUp {
+func (factory *AcFactory) ensureTearUp() {
+	if !factory.tearUp {
 		panic("TearUp() required")
 	}
 }

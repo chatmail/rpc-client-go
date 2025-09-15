@@ -28,56 +28,56 @@ func NewIOTransport() *IOTransport {
 	return &IOTransport{Cmd: deltachatRpcServerBin, Stderr: os.Stderr}
 }
 
-func (self *IOTransport) Open() error {
-	self.mu.Lock()
-	defer self.mu.Unlock()
+func (trans *IOTransport) Open() error {
+	trans.mu.Lock()
+	defer trans.mu.Unlock()
 
-	if self.ctx != nil && self.ctx.Err() == nil {
+	if trans.ctx != nil && trans.ctx.Err() == nil {
 		return &TransportStartedErr{}
 	}
 
-	self.ctx, self.cancel = context.WithCancel(context.Background())
-	self.cmd = exec.CommandContext(self.ctx, self.Cmd)
-	if self.AccountsDir != "" {
-		self.cmd.Env = append(os.Environ(), "DC_ACCOUNTS_PATH="+self.AccountsDir)
+	trans.ctx, trans.cancel = context.WithCancel(context.Background())
+	trans.cmd = exec.CommandContext(trans.ctx, trans.Cmd)
+	if trans.AccountsDir != "" {
+		trans.cmd.Env = append(os.Environ(), "DC_ACCOUNTS_PATH="+trans.AccountsDir)
 	}
-	self.cmd.Stderr = self.Stderr
-	self.stdin, _ = self.cmd.StdinPipe()
-	stdout, _ := self.cmd.StdoutPipe()
-	if err := self.cmd.Start(); err != nil {
-		self.cancel()
+	trans.cmd.Stderr = trans.Stderr
+	trans.stdin, _ = trans.cmd.StdinPipe()
+	stdout, _ := trans.cmd.StdoutPipe()
+	if err := trans.cmd.Start(); err != nil {
+		trans.cancel()
 		return err
 	}
 
-	self.client = jrpc2.NewClient(channel.Line(stdout, self.stdin), nil)
+	trans.client = jrpc2.NewClient(channel.Line(stdout, trans.stdin), nil)
 	return nil
 }
 
-func (self *IOTransport) Close() {
-	self.mu.Lock()
-	defer self.mu.Unlock()
+func (trans *IOTransport) Close() {
+	trans.mu.Lock()
+	defer trans.mu.Unlock()
 
-	if self.ctx == nil || self.ctx.Err() != nil {
+	if trans.ctx == nil || trans.ctx.Err() != nil {
 		return
 	}
 
-	self.stdin.Close()
-	self.cancel()
-	self.cmd.Process.Wait() //nolint:errcheck
+	_ = trans.stdin.Close()
+	trans.cancel()
+	trans.cmd.Process.Wait() //nolint:errcheck
 }
 
-func (self *IOTransport) Call(ctx context.Context, method string, params ...any) error {
-	_, err := self.client.Call(ctx, method, params)
+func (trans *IOTransport) Call(ctx context.Context, method string, params ...any) error {
+	_, err := trans.client.Call(ctx, method, params)
 	return err
 }
 
-func (self *IOTransport) CallResult(ctx context.Context, result any, method string, params ...any) error {
-	return self.client.CallResult(ctx, method, params, &result)
+func (trans *IOTransport) CallResult(ctx context.Context, result any, method string, params ...any) error {
+	return trans.client.CallResult(ctx, method, params, &result)
 }
 
 // TransportStartedErr is returned by IOTransport.Open() if the Transport is already started
 type TransportStartedErr struct{}
 
-func (self *TransportStartedErr) Error() string {
-	return "Transport is already started"
+func (trans *TransportStartedErr) Error() string {
+	return "transport is already started"
 }
