@@ -336,6 +336,15 @@ func (rpc *Rpc) GetChatEncryptionInfo(accountId AccountId, chatId ChatId) (strin
 	return data, err
 }
 
+// Get QR code text that will offer a [SecureJoin](https://securejoin.delta.chat/) invitation.
+// If `chatId` is a group chat ID, SecureJoin QR code for the group is returned.
+// If `chatId` is unset, setup contact QR code is returned.
+func (rpc *Rpc) GetChatSecurejoinQrCode(accountId AccountId, chatId option.Option[ChatId]) (string, error) {
+	var data string
+	err := rpc.Transport.CallResult(rpc.Context, &data, "get_chat_securejoin_qr_code", accountId, chatId)
+	return data, err
+}
+
 // Get Join-Group QR code text and SVG data.
 func (rpc *Rpc) GetChatSecurejoinQrCodeSvg(accountId AccountId, chatId option.Option[ChatId]) (string, string, error) {
 	var data [2]string
@@ -607,6 +616,22 @@ func (rpc *Rpc) CreateContact(accountId AccountId, email string, name string) (C
 	var id ContactId
 	err := rpc.Transport.CallResult(rpc.Context, &id, "create_contact", accountId, email, name)
 	return id, err
+}
+
+// Imports contacts from a vCard.
+//
+// Returns the ids of created/modified contacts in the order they appear in the vCard.
+func (rpc *Rpc) importVcardContents(accountId AccountId, vcard string) ([]ContactId, error) {
+	var ids []ContactId
+	err := rpc.Transport.CallResult(rpc.Context, &ids, "import_vcard_contents", accountId, vcard)
+	return ids, err
+}
+
+// Returns a vCard containing contacts with the given ids.
+func (rpc *Rpc) makeVcard(accountId AccountId, contacts []ContactId) (string, error) {
+	var vcard string
+	err := rpc.Transport.CallResult(rpc.Context, &vcard, "make_vcard", accountId, contacts)
+	return vcard, err
 }
 
 // Returns contact id of the created or existing DM chat with that contact

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+## Added
+
+- new Rpc API: `GetChatSecurejoinQrCode`, `importVcardContents`, `makeVcard`
+
 ## v1.2.14
 
 ## Added

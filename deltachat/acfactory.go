@@ -198,47 +198,43 @@ func (factory *AcFactory) NextMsg(rpc *Rpc, accId AccountId) *MsgSnapshot {
 	return msg
 }
 
-// Introduce two accounts to each other creating a 1:1 chat between them and exchanging messages.
+// Introduce two accounts to each other creating a 1:1 chat between them.
 func (factory *AcFactory) IntroduceEachOther(rpc1 *Rpc, accId1 AccountId, rpc2 *Rpc, accId2 AccountId) {
-	chatId := factory.CreateChat(rpc1, accId1, rpc2, accId2)
-	_, err := rpc1.MiscSendTextMessage(accId1, chatId, "hi")
+	qrdata, err := rpc1.GetChatSecurejoinQrCode(accId1, option.None[ChatId]())
 	if err != nil {
 		panic(err)
 	}
-	factory.WaitForEventInChat(rpc1, accId1, chatId, EventMsgsChanged{})
-	snapshot := factory.NextMsg(rpc2, accId2)
-	if snapshot.Text != "hi" {
-		panic("unexpected message: " + snapshot.Text)
+	_, err = rpc2.SecureJoin(accId2, qrdata)
+	if err != nil {
+		panic(err)
 	}
 
-	err = rpc2.AcceptChat(accId2, snapshot.ChatId)
-	if err != nil {
-		panic(err)
+	for {
+		event := factory.WaitForEvent(rpc1, accId1, EventSecurejoinInviterProgress{}).(EventSecurejoinInviterProgress)
+		if event.Progress == 1000 {
+			break
+		}
 	}
-	_, err = rpc2.MiscSendTextMessage(accId2, snapshot.ChatId, "hello")
-	if err != nil {
-		panic(err)
-	}
-	factory.WaitForEventInChat(rpc2, accId2, snapshot.ChatId, EventMsgsChanged{})
-	snapshot = factory.NextMsg(rpc1, accId1)
-	if snapshot.Text != "hello" {
-		panic("unexpected message: " + snapshot.Text)
+
+	for {
+		event := factory.WaitForEvent(rpc2, accId2, EventSecurejoinJoinerProgress{}).(EventSecurejoinJoinerProgress)
+		if event.Progress == 1000 {
+			break
+		}
 	}
 }
 
 // Create a 1:1 chat with accId2 in the chatlist of accId1.
 func (factory *AcFactory) CreateChat(rpc1 *Rpc, accId1 AccountId, rpc2 *Rpc, accId2 AccountId) ChatId {
-	addr2, err := rpc2.GetConfig(accId2, "configured_addr")
+	vcard, err := rpc2.makeVcard(accId2, []ContactId{ContactSelf})
 	if err != nil {
 		panic(err)
 	}
-
-	contactId, err := rpc1.CreateContact(accId1, addr2.Unwrap(), "")
+	ids, err := rpc1.importVcardContents(accId1, vcard)
 	if err != nil {
 		panic(err)
 	}
-
-	chatId, err := rpc1.CreateChatByContactId(accId1, contactId)
+	chatId, err := rpc1.CreateChatByContactId(accId1, ids[0])
 	if err != nil {
 		panic(err)
 	}
