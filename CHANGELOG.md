@@ -9,11 +9,12 @@
 
 ### Changed
 
-- dependencies: upgrade jrpc2 to version v1.1.2
-- breaking: `EventHandler` and `NewMsgHandler` now have an extra parameter "bot"
-- breaking: retrieve events via long polling (added to JSON-RPC server in: https://github.com/chatmail/core/pull/4341/)
+- breaking: version numbering changed to: `v1.CORE_VERSION`
 - breaking: minimum Chatmail core version required: 2.14.0
 - breaking: required golang version: 1.25
+- breaking: `EventHandler` and `NewMsgHandler` now have an extra parameter "bot"
+- breaking: retrieve events via long polling (added to JSON-RPC server in: https://github.com/chatmail/core/pull/4341/)
+- dependencies: upgrade jrpc2 to version v1.1.2
 
 ### Fixed
 
