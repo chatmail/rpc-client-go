@@ -1,8 +1,8 @@
 module github.com/deltachat/deltachat-rpc-client-go
 
-go 1.21
+go 1.25
 
-toolchain go1.21.0
+toolchain go1.25.0
 
 require (
 	github.com/creachadair/jrpc2 v1.1.2
