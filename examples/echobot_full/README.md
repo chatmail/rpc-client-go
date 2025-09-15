@@ -8,7 +8,7 @@ You need to have a local fake email server running. The easiest way to do that i
 
 ```
 $ docker pull ghcr.io/deltachat/mail-server-tester:release
-$ docker run -it --rm -p 3025:25 -p 3110:110 -p 3143:143 -p 3465:465 -p 3993:993 ghcr.io/deltachat/mail-server-tester
+$ docker run -it --rm -p 3025:25 -p 3110:110 -p 3143:143 -p 3465:465 -p 3993:993 ghcr.io/deltachat/mail-server-tester:release
 ```
 
 Then you can run the tests:

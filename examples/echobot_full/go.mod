@@ -3,7 +3,7 @@ module echobot
 go 1.25
 
 require (
-	github.com/chatmail/rpc-client-go v1.134.0
+	github.com/chatmail/rpc-client-go v1.2.14
 	github.com/stretchr/testify v1.8.2
 )
 

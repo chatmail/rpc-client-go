@@ -2,7 +2,7 @@ module rpcbot
 
 go 1.25
 
-require github.com/chatmail/rpc-client-go v1.134.0
+require github.com/chatmail/rpc-client-go v1.2.14
 
 require (
 	github.com/creachadair/jrpc2 v1.1.2 // indirect
