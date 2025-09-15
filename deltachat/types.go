@@ -207,8 +207,8 @@ type WebxdcMsgInfo struct {
 }
 
 type Reaction struct {
-	Emoji string
-	Count uint32
+	Emoji      string
+	Count      uint32
 	IsFromSelf bool
 }
 
