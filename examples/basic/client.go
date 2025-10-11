@@ -51,12 +51,7 @@ func main() {
 		rpc.StartIo(accId)
 	} else {
 		log.Println("Account not configured, configuring...")
-		rpc.BatchSetConfig(accId,
-			map[string]option.Option[string]{
-				"addr":    option.Some(os.Args[1]),
-				"mail_pw": option.Some(os.Args[2]),
-			},
-		)
+		rpc.SetConfigFromQr(accId, os.Args[1])
 		if err := rpc.Configure(accId); err != nil {
 			log.Fatalln(err)
 		}
@@ -64,6 +59,8 @@ func main() {
 
 	addr, _ := rpc.GetConfig(accId, "addr")
 	log.Println("Using account:", addr.Unwrap())
+	inviteLink, _ := rpc.GetChatSecurejoinQrCode(accId, option.None[deltachat.ChatId]())
+	log.Println("Listening on:", inviteLink)
 
 	for {
 		accId2, event, err := rpc.GetNextEvent()
