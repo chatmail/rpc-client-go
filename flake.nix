@@ -19,6 +19,7 @@
       default = pkgs.mkShell {
         nativeBuildInputs = with pkgs; [
           go
+          gopls
           deltachat-rpc-server
         ];
       };
@@ -26,6 +27,7 @@
       no_core = pkgs.mkShell {
         nativeBuildInputs = with pkgs; [
           go
+          gopls
         ];
       };
     });
