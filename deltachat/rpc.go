@@ -133,6 +133,11 @@ func (rpc *Rpc) SetConfig(accountId AccountId, key string, value option.Option[s
 	return rpc.Transport.Call(rpc.Context, "set_config", accountId, key, value)
 }
 
+// Set account configuration value from qr code
+func (rpc *Rpc) SetConfigFromQr(accountId AccountId, qrContent string) error {
+	return rpc.Transport.Call(rpc.Context, "set_config_from_qr", accountId, qrContent)
+}
+
 // Tweak several account configuration values in a batch.
 func (rpc *Rpc) BatchSetConfig(accountId AccountId, config map[string]option.Option[string]) error {
 	return rpc.Transport.Call(rpc.Context, "batch_set_config", accountId, config)

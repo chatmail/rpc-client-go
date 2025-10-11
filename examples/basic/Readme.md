@@ -2,9 +2,9 @@
 
 
 ```sh
-go run echobot.go email@address password
+go run echobot.go DCACCOUNT:https://nine.testrun.org/new
 ```
 
 ```sh
-go run client.go email@address password
+go run client.go DCACCOUNT:https://nine.testrun.org/new
 ```
