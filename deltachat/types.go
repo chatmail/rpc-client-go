@@ -13,7 +13,7 @@ type MsgId uint64
 type ChatId uint64
 
 // Values in const.go
-type ChatType uint
+type ChatType string
 
 type Account struct {
 	// Configured
@@ -95,11 +95,13 @@ type ChatListItem struct {
 	Name                string
 	AvatarPath          string
 	Color               string
+	ChatType            ChatType
 	LastUpdated         Timestamp
 	SummaryText1        string
 	SummaryText2        string
 	SummaryStatus       uint32
-	IsProtected         bool
+	SummaryPreviewImage string
+	IsEncrypted         bool
 	IsGroup             bool
 	FreshMessageCounter uint
 	IsSelfTalk          bool
@@ -110,16 +112,10 @@ type ChatListItem struct {
 	IsPinned            bool
 	IsMuted             bool
 	IsContactRequest    bool
-	IsBroadcast         bool
 	DmChatContact       ContactId
 	WasSeenRecently     bool
-
-	// ArchiveLink
-	// FreshMessageCounter uint
-
-	// Error
-	// Id uint64
-	Error string
+	LastMessageType     MsgType
+	LastMessageId       MsgId
 }
 
 // Message data provided to Chat.SendMsg()

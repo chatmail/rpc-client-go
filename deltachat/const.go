@@ -32,11 +32,12 @@ const (
 	ContactFlagAddSelf      ContactFlag = 0x02
 
 	//Chat types
-	ChatUndefined   ChatType = 0
-	ChatSingle      ChatType = 100
-	ChatGroup       ChatType = 120
-	ChatMailinglist ChatType = 140
-	ChatBroadcast   ChatType = 160
+	ChatUndefined    ChatType = ""
+	ChatSingle       ChatType = "Single"
+	ChatGroup        ChatType = "Group"
+	ChatMailinglist  ChatType = "MailingList"
+	ChatOutBroadcast ChatType = "OutBroadcast"
+	ChatInBroadcast  ChatType = "InBroadcast"
 
 	// Chat visibility types
 	ChatVisibilityNormal   ChatVisibility = "Normal"
