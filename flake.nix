@@ -24,6 +24,7 @@
         ];
       };
       # not core included, for when you want to set it to a local core checkout via $PATH
+      # you can start this with `nix develop .#no_core`
       no_core = pkgs.mkShell {
         nativeBuildInputs = with pkgs; [
           go
