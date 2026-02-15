@@ -13,7 +13,7 @@ type MsgId uint64
 type ChatId uint64
 
 // Values in const.go
-type ChatType uint
+type ChatType string
 
 type Account struct {
 	// Configured

@@ -31,13 +31,6 @@ const (
 	ContactFlagVerifiedOnly ContactFlag = 0x01
 	ContactFlagAddSelf      ContactFlag = 0x02
 
-	//Chat types
-	ChatUndefined   ChatType = 0
-	ChatSingle      ChatType = 100
-	ChatGroup       ChatType = 120
-	ChatMailinglist ChatType = 140
-	ChatBroadcast   ChatType = 160
-
 	// Chat visibility types
 	ChatVisibilityNormal   ChatVisibility = "Normal"
 	ChatVisibilityArchived ChatVisibility = "Archived"
@@ -91,4 +84,15 @@ const (
 	SysmsgEphemeralTimerChanged    SysmsgType = "EphemeralTimerChanged"
 	SysmsgMultiDeviceSync          SysmsgType = "MultiDeviceSync"
 	SysmsgWebxdcInfoMessage        SysmsgType = "WebxdcInfoMessage"
+)
+
+const (
+	ChatSingle       ChatType = "Single"
+	ChatGroup        ChatType = "Group"
+	ChatMailinglist  ChatType = "Mailinglist"
+	ChatOutBroadcast ChatType = "OutBroadcast"
+	ChatInBroadcast  ChatType = "InBroadcast"
+
+	// Deprecated: use "ChatOutBroadcast" instead
+	ChatBroadcast ChatType = ChatOutBroadcast
 )
