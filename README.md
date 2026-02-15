@@ -92,7 +92,7 @@ Save the previous code snippet as `echobot.go` then run:
 
 ```sh
 go mod init echobot; go mod tidy
-go run ./echobot.go bot@example.com PASSWORD
+go run ./echobot.go dcaccount:nine.testrun.org
 ```
 
 Check the [examples folder](./examples)
