@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/chatmail/rpc-client-go/deltachat"
+	"github.com/chatmail/rpc-client-go/deltachat/option"
 	"github.com/chatmail/rpc-client-go/deltachat/transport"
 )
 
@@ -44,13 +45,14 @@ func main() {
 
 	if isConf, _ := bot.Rpc.IsConfigured(accId); !isConf {
 		log.Println("Bot not configured, configuring...")
-		err := bot.Configure(accId, os.Args[1], os.Args[2])
+		rpc.SetConfigFromQr(accId, os.Args[1])
+		err := bot.Rpc.Configure(accId)
 		if err != nil {
 			log.Fatalln(err)
 		}
 	}
 
-	addr, _ := bot.Rpc.GetConfig(accId, "configured_addr")
-	log.Println("Listening at:", addr.Unwrap())
+	inviteLink, _ := bot.Rpc.GetChatSecurejoinQrCode(accId, option.None[deltachat.ChatId]())
+	log.Println("Listening at:", inviteLink)
 	bot.Run()
 }
