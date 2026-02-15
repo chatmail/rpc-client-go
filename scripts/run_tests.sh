@@ -35,7 +35,7 @@ then
     go install github.com/dave/courtney@master
 fi
 
-for i in ./examples/*.go
+for i in ./examples/basic/*.go
 do
     echo "Testing examples: $i"
     if ! go build -v "$i"
