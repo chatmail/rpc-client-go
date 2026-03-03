@@ -13,10 +13,10 @@ func TestAcFactory_TearDown(t *testing.T) {
 
 func TestAcFactory_getChatId(t *testing.T) {
 	t.Parallel()
-	getChatId(EventIncomingMsg{})
-	getChatId(EventMsgsNoticed{})
-	getChatId(EventMsgDelivered{})
-	getChatId(EventMsgFailed{})
-	getChatId(EventMsgRead{})
-	getChatId(EventChatModified{})
+	getChatId(&EventTypeIncomingMsg{})
+	getChatId(&EventTypeMsgsNoticed{})
+	getChatId(&EventTypeMsgDelivered{})
+	getChatId(&EventTypeMsgFailed{})
+	getChatId(&EventTypeMsgRead{})
+	getChatId(&EventTypeChatModified{})
 }

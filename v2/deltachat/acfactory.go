@@ -6,16 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
-
-	"github.com/chatmail/rpc-client-go/deltachat/option"
-	"github.com/chatmail/rpc-client-go/deltachat/transport"
 )
 
 // AcFactory facilitates unit testing Delta Chat clients/bots.
-// It must be used in conjunction with a test mail server service, for example:
-// https://github.com/deltachat/mail-server-tester
 //
 // Typical usage is as follows:
 //
@@ -33,32 +27,18 @@ import (
 //		m.Run()
 //	}
 type AcFactory struct {
-	// DefaultCfg is the default settings to apply to new created accounts
-	DefaultCfg  map[string]option.Option[string]
-	Debug       bool
-	tempDir     string
-	serial      int64
-	startTime   int64
-	serialMutex sync.Mutex
-	tearUp      bool
+	// ConfigQr is the DCACCOUNT: URI used to create new accounts
+	ConfigQr  string
+	Debug     bool
+	tempDir   string
+	startTime int64
+	tearUp    bool
 }
 
 // Prepare the AcFactory.
-//
-// If the test mail server has not standard configuration, you should set the custom configuration
-// here.
 func (factory *AcFactory) TearUp() {
-	if factory.DefaultCfg == nil {
-		factory.DefaultCfg = map[string]option.Option[string]{
-			"mail_server":   option.Some("localhost"),
-			"send_server":   option.Some("localhost"),
-			"mail_port":     option.Some("3143"),
-			"send_port":     option.Some("3025"),
-			"mail_security": option.Some("3"),
-			"send_security": option.Some("3"),
-			"mvbox_move":    option.Some("0"),
-		}
-
+	if factory.ConfigQr == "" {
+		factory.ConfigQr = "dcaccount:nine.testrun.org"
 	}
 	factory.startTime = time.Now().Unix()
 
@@ -92,7 +72,7 @@ func (factory *AcFactory) MkdirTemp() string {
 // Call the given function passing a new Rpc as parameter.
 func (factory *AcFactory) WithRpc(callback func(*Rpc)) {
 	factory.ensureTearUp()
-	trans := transport.NewIOTransport()
+	trans := NewIOTransport()
 	if !factory.Debug {
 		trans.Stderr = nil
 	}
@@ -108,74 +88,52 @@ func (factory *AcFactory) WithRpc(callback func(*Rpc)) {
 }
 
 // Get a new Account that is not yet configured, but it is ready to be configured.
-func (factory *AcFactory) WithUnconfiguredAccount(callback func(*Rpc, AccountId)) {
+func (factory *AcFactory) WithUnconfiguredAccount(callback func(*Rpc, uint32)) {
 	factory.WithRpc(func(rpc *Rpc) {
 		accId, err := rpc.AddAccount()
 		if err != nil {
 			panic(err)
 		}
-		factory.serialMutex.Lock()
-		factory.serial++
-		serial := factory.serial
-		factory.serialMutex.Unlock()
-
-		if len(factory.DefaultCfg) != 0 {
-			err = rpc.BatchSetConfig(accId, factory.DefaultCfg)
-			if err != nil {
-				panic(err)
-			}
-		}
-		err = rpc.BatchSetConfig(accId, map[string]option.Option[string]{
-			"addr":    option.Some(fmt.Sprintf("acc%v.%v@localhost", serial, factory.startTime)),
-			"mail_pw": option.Some(fmt.Sprintf("password%v", serial)),
-		})
-		if err != nil {
-			panic(err)
-		}
-
 		callback(rpc, accId)
 	})
 }
 
 // Get a new account configured and with I/O already started.
-func (factory *AcFactory) WithOnlineAccount(callback func(*Rpc, AccountId)) {
-	factory.WithUnconfiguredAccount(func(rpc *Rpc, accId AccountId) {
-		err := rpc.Configure(accId)
-		if err != nil {
+func (factory *AcFactory) WithOnlineAccount(callback func(*Rpc, uint32)) {
+	factory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
+		if err := rpc.AddTransportFromQr(accId, factory.ConfigQr); err != nil {
 			panic(err)
 		}
-
 		callback(rpc, accId)
 	})
 }
 
 // Get a new bot not yet configured, but its account is ready to be configured.
-func (factory *AcFactory) WithUnconfiguredBot(callback func(*Bot, AccountId)) {
-	factory.WithUnconfiguredAccount(func(rpc *Rpc, accId AccountId) {
+func (factory *AcFactory) WithUnconfiguredBot(callback func(*Bot, uint32)) {
+	factory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
+		botFlag := "1"
+		if err := rpc.SetConfig(accId, "bot", &botFlag); err != nil {
+			panic(err)
+		}
 		bot := NewBot(rpc)
 		callback(bot, accId)
 	})
 }
 
 // Get a new bot configured and with its account I/O already started. The bot is not running yet.
-func (factory *AcFactory) WithOnlineBot(callback func(*Bot, AccountId)) {
-	factory.WithUnconfiguredAccount(func(rpc *Rpc, accId AccountId) {
-		addr, _ := rpc.GetConfig(accId, "addr")
-		pass, _ := rpc.GetConfig(accId, "mail_pw")
-		bot := NewBot(rpc)
-		err := bot.Configure(accId, addr.Unwrap(), pass.Unwrap())
-		if err != nil {
+func (factory *AcFactory) WithOnlineBot(callback func(*Bot, uint32)) {
+	factory.WithUnconfiguredBot(func(bot *Bot, accId uint32) {
+		if err := bot.Rpc.AddTransportFromQr(accId, factory.ConfigQr); err != nil {
 			panic(err)
 		}
-
 		callback(bot, accId)
 	})
 }
 
 // Get a new bot configured and already listening to new events/messages.
 // It is ensured that Bot.IsRunning() is true for the returned bot.
-func (factory *AcFactory) WithRunningBot(callback func(*Bot, AccountId)) {
-	factory.WithOnlineBot(func(bot *Bot, accId AccountId) {
+func (factory *AcFactory) WithRunningBot(callback func(*Bot, uint32)) {
+	factory.WithOnlineBot(func(bot *Bot, accId uint32) {
 		var err error
 		go func() { err = bot.Run() }()
 		for !bot.IsRunning() {
@@ -189,8 +147,8 @@ func (factory *AcFactory) WithRunningBot(callback func(*Bot, AccountId)) {
 }
 
 // Wait for the next incoming message in the given account.
-func (factory *AcFactory) NextMsg(rpc *Rpc, accId AccountId) *MsgSnapshot {
-	event := factory.WaitForEvent(rpc, accId, EventIncomingMsg{}).(EventIncomingMsg)
+func (factory *AcFactory) NextMsg(rpc *Rpc, accId uint32) Message {
+	event := factory.WaitForEvent(rpc, accId, &EventTypeIncomingMsg{}).(*EventTypeIncomingMsg)
 	msg, err := rpc.GetMessage(accId, event.MsgId)
 	if err != nil {
 		panic(err)
@@ -199,8 +157,8 @@ func (factory *AcFactory) NextMsg(rpc *Rpc, accId AccountId) *MsgSnapshot {
 }
 
 // Introduce two accounts to each other creating a 1:1 chat between them.
-func (factory *AcFactory) IntroduceEachOther(rpc1 *Rpc, accId1 AccountId, rpc2 *Rpc, accId2 AccountId) {
-	qrdata, err := rpc1.GetChatSecurejoinQrCode(accId1, option.None[ChatId]())
+func (factory *AcFactory) IntroduceEachOther(rpc1 *Rpc, accId1 uint32, rpc2 *Rpc, accId2 uint32) {
+	qrdata, err := rpc1.GetChatSecurejoinQrCode(accId1, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -210,14 +168,14 @@ func (factory *AcFactory) IntroduceEachOther(rpc1 *Rpc, accId1 AccountId, rpc2 *
 	}
 
 	for {
-		event := factory.WaitForEvent(rpc1, accId1, EventSecurejoinInviterProgress{}).(EventSecurejoinInviterProgress)
+		event := factory.WaitForEvent(rpc1, accId1, &EventTypeSecurejoinInviterProgress{}).(*EventTypeSecurejoinInviterProgress)
 		if event.Progress == 1000 {
 			break
 		}
 	}
 
 	for {
-		event := factory.WaitForEvent(rpc2, accId2, EventSecurejoinJoinerProgress{}).(EventSecurejoinJoinerProgress)
+		event := factory.WaitForEvent(rpc2, accId2, &EventTypeSecurejoinJoinerProgress{}).(*EventTypeSecurejoinJoinerProgress)
 		if event.Progress == 1000 {
 			break
 		}
@@ -225,12 +183,12 @@ func (factory *AcFactory) IntroduceEachOther(rpc1 *Rpc, accId1 AccountId, rpc2 *
 }
 
 // Create a 1:1 chat with accId2 in the chatlist of accId1.
-func (factory *AcFactory) CreateChat(rpc1 *Rpc, accId1 AccountId, rpc2 *Rpc, accId2 AccountId) ChatId {
-	vcard, err := rpc2.makeVcard(accId2, []ContactId{ContactSelf})
+func (factory *AcFactory) CreateChat(rpc1 *Rpc, accId1 uint32, rpc2 *Rpc, accId2 uint32) uint32 {
+	vcard, err := rpc2.MakeVcard(accId2, []uint32{ContactSelf})
 	if err != nil {
 		panic(err)
 	}
-	ids, err := rpc1.importVcardContents(accId1, vcard)
+	ids, err := rpc1.ImportVcardContents(accId1, vcard)
 	if err != nil {
 		panic(err)
 	}
@@ -243,9 +201,9 @@ func (factory *AcFactory) CreateChat(rpc1 *Rpc, accId1 AccountId, rpc2 *Rpc, acc
 }
 
 // Get a path to an image file that can be used for testing.
-func (factory *AcFactory) TestImage() string {
-	var img string
-	factory.WithOnlineAccount(func(rpc *Rpc, accId AccountId) {
+func (factory *AcFactory) TestImage() *string {
+	var img *string
+	factory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
 		chatId, err := rpc.CreateChatByContactId(accId, ContactSelf)
 		if err != nil {
 			panic(err)
@@ -307,8 +265,8 @@ func (factory *AcFactory) TestWebxdc() string {
 }
 
 // Wait for an event of the same type as the given event, the event must belong to the chat
-// with the given ChatId.
-func (factory *AcFactory) WaitForEventInChat(rpc *Rpc, accId AccountId, chatId ChatId, event Event) Event {
+// with the given chat id.
+func (factory *AcFactory) WaitForEventInChat(rpc *Rpc, accId uint32, chatId uint32, event EventType) EventType {
 	for {
 		event = factory.WaitForEvent(rpc, accId, event)
 		if getChatId(event) == chatId {
@@ -318,24 +276,24 @@ func (factory *AcFactory) WaitForEventInChat(rpc *Rpc, accId AccountId, chatId C
 }
 
 // Wait for an event of the same type as the given event.
-func (factory *AcFactory) WaitForEvent(rpc *Rpc, accId AccountId, event Event) Event {
+func (factory *AcFactory) WaitForEvent(rpc *Rpc, accId uint32, event EventType) EventType {
 	for {
-		accId2, ev, err := rpc.GetNextEvent()
+		ev, err := rpc.GetNextEvent()
 		if err != nil {
 			panic(err)
 		}
-		if accId != accId2 {
-			fmt.Printf("WARNING: Waiting for event in account %v, but got event for account %v, discarding event %#v.\n", accId, accId2, event)
+		if accId != ev.ContextId {
+			fmt.Printf("WARNING: Waiting for event %v in account %v, but got event for account %v, discarding event %#v.\n", event.GetKind(), accId, ev.ContextId, ev)
 			continue
 		}
-		if ev.eventType() == event.eventType() {
+		if ev.Event.GetKind() == event.GetKind() {
 			if factory.Debug {
-				fmt.Printf("Got awaited event %v\n", ev.eventType())
+				fmt.Printf("Got awaited event %v\n", ev.Event.GetKind())
 			}
-			return ev
+			return ev.Event
 		}
 		if factory.Debug {
-			fmt.Printf("Waiting for event %v, got: %v\n", event.eventType(), ev.eventType())
+			fmt.Printf("Waiting for event %v, got: %v\n", event.GetKind(), ev.Event.GetKind())
 		}
 	}
 }
@@ -346,28 +304,28 @@ func (factory *AcFactory) ensureTearUp() {
 	}
 }
 
-func getChatId(event Event) ChatId {
-	var chatId ChatId
+func getChatId(event EventType) uint32 {
+	var chatId uint32
 	switch ev := event.(type) {
-	case EventMsgsChanged:
+	case *EventTypeMsgsChanged:
 		chatId = ev.ChatId
-	case EventReactionsChanged:
+	case *EventTypeReactionsChanged:
 		chatId = ev.ChatId
-	case EventIncomingMsg:
+	case *EventTypeIncomingMsg:
 		chatId = ev.ChatId
-	case EventMsgsNoticed:
+	case *EventTypeMsgsNoticed:
 		chatId = ev.ChatId
-	case EventMsgDelivered:
+	case *EventTypeMsgDelivered:
 		chatId = ev.ChatId
-	case EventMsgFailed:
+	case *EventTypeMsgFailed:
 		chatId = ev.ChatId
-	case EventMsgRead:
+	case *EventTypeMsgRead:
 		chatId = ev.ChatId
-	case EventMsgDeleted:
+	case *EventTypeMsgDeleted:
 		chatId = ev.ChatId
-	case EventChatModified:
+	case *EventTypeChatModified:
 		chatId = ev.ChatId
-	case EventChatEphemeralTimerModified:
+	case *EventTypeChatEphemeralTimerModified:
 		chatId = ev.ChatId
 	}
 	return chatId
