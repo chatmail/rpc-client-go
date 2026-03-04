@@ -32,7 +32,6 @@ type AccountConfigured struct {
 	Color       string  `json:"color"`
 	DisplayName *string `json:"displayName,omitempty"`
 	Id          uint32  `json:"id"`
-	Kind        string  `json:"kind"`
 	// Optional tag as "Work", "Family". Meant to help profile owner to differ between profiles with similar names.
 	PrivateTag   *string `json:"privateTag,omitempty"`
 	ProfileImage *string `json:"profileImage,omitempty"`
@@ -40,14 +39,27 @@ type AccountConfigured struct {
 
 func (*AccountConfigured) isAccountVariant() {}
 func (*AccountConfigured) GetKind() string   { return "Configured" }
+func (v *AccountConfigured) MarshalJSON() ([]byte, error) {
+	type alias AccountConfigured
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Configured", alias: alias(*v)})
+}
 
 type AccountUnconfigured struct {
-	Id   uint32 `json:"id"`
-	Kind string `json:"kind"`
+	Id uint32 `json:"id"`
 }
 
 func (*AccountUnconfigured) isAccountVariant() {}
 func (*AccountUnconfigured) GetKind() string   { return "Unconfigured" }
+func (v *AccountUnconfigured) MarshalJSON() ([]byte, error) {
+	type alias AccountUnconfigured
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Unconfigured", alias: alias(*v)})
+}
 
 func unmarshalAccount(data json.RawMessage, out *Account) error {
 	var header struct {
@@ -143,55 +155,91 @@ type CallState interface {
 //
 // There is no separate state for outgoing call that has been dialled but not ringing on the other side yet as we don't know whether the other side received our call.
 type CallStateAlerting struct {
-	Kind string `json:"kind"`
 }
 
 func (*CallStateAlerting) isCallStateVariant() {}
 func (*CallStateAlerting) GetKind() string     { return "Alerting" }
+func (v *CallStateAlerting) MarshalJSON() ([]byte, error) {
+	type alias CallStateAlerting
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Alerting", alias: alias(*v)})
+}
 
 // Active call.
 type CallStateActive struct {
-	Kind string `json:"kind"`
 }
 
 func (*CallStateActive) isCallStateVariant() {}
 func (*CallStateActive) GetKind() string     { return "Active" }
+func (v *CallStateActive) MarshalJSON() ([]byte, error) {
+	type alias CallStateActive
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Active", alias: alias(*v)})
+}
 
 // Completed call that was once active and then was terminated for any reason.
 type CallStateCompleted struct {
 	// Call duration in seconds.
-	Duration int64  `json:"duration"`
-	Kind     string `json:"kind"`
+	Duration int64 `json:"duration"`
 }
 
 func (*CallStateCompleted) isCallStateVariant() {}
 func (*CallStateCompleted) GetKind() string     { return "Completed" }
+func (v *CallStateCompleted) MarshalJSON() ([]byte, error) {
+	type alias CallStateCompleted
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Completed", alias: alias(*v)})
+}
 
 // Incoming call that was not picked up within a timeout or was explicitly ended by the caller before we picked up.
 type CallStateMissed struct {
-	Kind string `json:"kind"`
 }
 
 func (*CallStateMissed) isCallStateVariant() {}
 func (*CallStateMissed) GetKind() string     { return "Missed" }
+func (v *CallStateMissed) MarshalJSON() ([]byte, error) {
+	type alias CallStateMissed
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Missed", alias: alias(*v)})
+}
 
 // Incoming call that was explicitly ended on our side before picking up or outgoing call that was declined before the timeout.
 type CallStateDeclined struct {
-	Kind string `json:"kind"`
 }
 
 func (*CallStateDeclined) isCallStateVariant() {}
 func (*CallStateDeclined) GetKind() string     { return "Declined" }
+func (v *CallStateDeclined) MarshalJSON() ([]byte, error) {
+	type alias CallStateDeclined
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Declined", alias: alias(*v)})
+}
 
 // Outgoing call that has been canceled on our side before receiving a response.
 //
 // Incoming calls cannot be canceled, on the receiver side canceled calls usually result in missed calls.
 type CallStateCanceled struct {
-	Kind string `json:"kind"`
 }
 
 func (*CallStateCanceled) isCallStateVariant() {}
 func (*CallStateCanceled) GetKind() string     { return "Canceled" }
+func (v *CallStateCanceled) MarshalJSON() ([]byte, error) {
+	type alias CallStateCanceled
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Canceled", alias: alias(*v)})
+}
 
 func unmarshalCallState(data json.RawMessage, out *CallState) error {
 	var header struct {
@@ -276,7 +324,6 @@ type ChatListItemFetchResultChatListItem struct {
 	IsSelfInGroup     bool      `json:"isSelfInGroup"`
 	IsSelfTalk        bool      `json:"isSelfTalk"`
 	IsSendingLocation bool      `json:"isSendingLocation"`
-	Kind              string    `json:"kind"`
 	LastMessageId     *uint32   `json:"lastMessageId,omitempty"`
 	LastMessageType   *Viewtype `json:"lastMessageType,omitempty"`
 	LastUpdated       *int64    `json:"lastUpdated,omitempty"`
@@ -291,23 +338,42 @@ type ChatListItemFetchResultChatListItem struct {
 
 func (*ChatListItemFetchResultChatListItem) isChatListItemFetchResultVariant() {}
 func (*ChatListItemFetchResultChatListItem) GetKind() string                   { return "ChatListItem" }
+func (v *ChatListItemFetchResultChatListItem) MarshalJSON() ([]byte, error) {
+	type alias ChatListItemFetchResultChatListItem
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ChatListItem", alias: alias(*v)})
+}
 
 type ChatListItemFetchResultArchiveLink struct {
-	FreshMessageCounter uint   `json:"freshMessageCounter"`
-	Kind                string `json:"kind"`
+	FreshMessageCounter uint `json:"freshMessageCounter"`
 }
 
 func (*ChatListItemFetchResultArchiveLink) isChatListItemFetchResultVariant() {}
 func (*ChatListItemFetchResultArchiveLink) GetKind() string                   { return "ArchiveLink" }
+func (v *ChatListItemFetchResultArchiveLink) MarshalJSON() ([]byte, error) {
+	type alias ChatListItemFetchResultArchiveLink
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ArchiveLink", alias: alias(*v)})
+}
 
 type ChatListItemFetchResultError struct {
 	Error string `json:"error"`
 	Id    uint32 `json:"id"`
-	Kind  string `json:"kind"`
 }
 
 func (*ChatListItemFetchResultError) isChatListItemFetchResultVariant() {}
 func (*ChatListItemFetchResultError) GetKind() string                   { return "Error" }
+func (v *ChatListItemFetchResultError) MarshalJSON() ([]byte, error) {
+	type alias ChatListItemFetchResultError
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Error", alias: alias(*v)})
+}
 
 func unmarshalChatListItemFetchResult(data json.RawMessage, out *ChatListItemFetchResult) error {
 	var header struct {
@@ -463,11 +529,17 @@ type EphemeralTimer interface {
 
 // Timer is disabled.
 type EphemeralTimerDisabled struct {
-	Kind string `json:"kind"`
 }
 
 func (*EphemeralTimerDisabled) isEphemeralTimerVariant() {}
 func (*EphemeralTimerDisabled) GetKind() string          { return "disabled" }
+func (v *EphemeralTimerDisabled) MarshalJSON() ([]byte, error) {
+	type alias EphemeralTimerDisabled
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "disabled", alias: alias(*v)})
+}
 
 // Timer is enabled.
 type EphemeralTimerEnabled struct {
@@ -475,11 +547,17 @@ type EphemeralTimerEnabled struct {
 	//
 	// The value cannot be 0.
 	Duration uint32 `json:"duration"`
-	Kind     string `json:"kind"`
 }
 
 func (*EphemeralTimerEnabled) isEphemeralTimerVariant() {}
 func (*EphemeralTimerEnabled) GetKind() string          { return "enabled" }
+func (v *EphemeralTimerEnabled) MarshalJSON() ([]byte, error) {
+	type alias EphemeralTimerEnabled
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "enabled", alias: alias(*v)})
+}
 
 func unmarshalEphemeralTimer(data json.RawMessage, out *EphemeralTimer) error {
 	var header struct {
@@ -539,94 +617,154 @@ type EventType interface {
 //
 // This event should *not* be reported to the end-user using a popup or something like that.
 type EventTypeInfo struct {
-	Kind string `json:"kind"`
-	Msg  string `json:"msg"`
+	Msg string `json:"msg"`
 }
 
 func (*EventTypeInfo) isEventTypeVariant() {}
 func (*EventTypeInfo) GetKind() string     { return "Info" }
+func (v *EventTypeInfo) MarshalJSON() ([]byte, error) {
+	type alias EventTypeInfo
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Info", alias: alias(*v)})
+}
 
 // Emitted when SMTP connection is established and login was successful.
 type EventTypeSmtpConnected struct {
-	Kind string `json:"kind"`
-	Msg  string `json:"msg"`
+	Msg string `json:"msg"`
 }
 
 func (*EventTypeSmtpConnected) isEventTypeVariant() {}
 func (*EventTypeSmtpConnected) GetKind() string     { return "SmtpConnected" }
+func (v *EventTypeSmtpConnected) MarshalJSON() ([]byte, error) {
+	type alias EventTypeSmtpConnected
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "SmtpConnected", alias: alias(*v)})
+}
 
 // Emitted when IMAP connection is established and login was successful.
 type EventTypeImapConnected struct {
-	Kind string `json:"kind"`
-	Msg  string `json:"msg"`
+	Msg string `json:"msg"`
 }
 
 func (*EventTypeImapConnected) isEventTypeVariant() {}
 func (*EventTypeImapConnected) GetKind() string     { return "ImapConnected" }
+func (v *EventTypeImapConnected) MarshalJSON() ([]byte, error) {
+	type alias EventTypeImapConnected
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ImapConnected", alias: alias(*v)})
+}
 
 // Emitted when a message was successfully sent to the SMTP server.
 type EventTypeSmtpMessageSent struct {
-	Kind string `json:"kind"`
-	Msg  string `json:"msg"`
+	Msg string `json:"msg"`
 }
 
 func (*EventTypeSmtpMessageSent) isEventTypeVariant() {}
 func (*EventTypeSmtpMessageSent) GetKind() string     { return "SmtpMessageSent" }
+func (v *EventTypeSmtpMessageSent) MarshalJSON() ([]byte, error) {
+	type alias EventTypeSmtpMessageSent
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "SmtpMessageSent", alias: alias(*v)})
+}
 
 // Emitted when an IMAP message has been marked as deleted
 type EventTypeImapMessageDeleted struct {
-	Kind string `json:"kind"`
-	Msg  string `json:"msg"`
+	Msg string `json:"msg"`
 }
 
 func (*EventTypeImapMessageDeleted) isEventTypeVariant() {}
 func (*EventTypeImapMessageDeleted) GetKind() string     { return "ImapMessageDeleted" }
+func (v *EventTypeImapMessageDeleted) MarshalJSON() ([]byte, error) {
+	type alias EventTypeImapMessageDeleted
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ImapMessageDeleted", alias: alias(*v)})
+}
 
 // Emitted when an IMAP message has been moved
 type EventTypeImapMessageMoved struct {
-	Kind string `json:"kind"`
-	Msg  string `json:"msg"`
+	Msg string `json:"msg"`
 }
 
 func (*EventTypeImapMessageMoved) isEventTypeVariant() {}
 func (*EventTypeImapMessageMoved) GetKind() string     { return "ImapMessageMoved" }
+func (v *EventTypeImapMessageMoved) MarshalJSON() ([]byte, error) {
+	type alias EventTypeImapMessageMoved
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ImapMessageMoved", alias: alias(*v)})
+}
 
 // Emitted before going into IDLE on the Inbox folder.
 type EventTypeImapInboxIdle struct {
-	Kind string `json:"kind"`
 }
 
 func (*EventTypeImapInboxIdle) isEventTypeVariant() {}
 func (*EventTypeImapInboxIdle) GetKind() string     { return "ImapInboxIdle" }
+func (v *EventTypeImapInboxIdle) MarshalJSON() ([]byte, error) {
+	type alias EventTypeImapInboxIdle
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ImapInboxIdle", alias: alias(*v)})
+}
 
 // Emitted when an new file in the $BLOBDIR was created
 type EventTypeNewBlobFile struct {
 	File string `json:"file"`
-	Kind string `json:"kind"`
 }
 
 func (*EventTypeNewBlobFile) isEventTypeVariant() {}
 func (*EventTypeNewBlobFile) GetKind() string     { return "NewBlobFile" }
+func (v *EventTypeNewBlobFile) MarshalJSON() ([]byte, error) {
+	type alias EventTypeNewBlobFile
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "NewBlobFile", alias: alias(*v)})
+}
 
 // Emitted when an file in the $BLOBDIR was deleted
 type EventTypeDeletedBlobFile struct {
 	File string `json:"file"`
-	Kind string `json:"kind"`
 }
 
 func (*EventTypeDeletedBlobFile) isEventTypeVariant() {}
 func (*EventTypeDeletedBlobFile) GetKind() string     { return "DeletedBlobFile" }
+func (v *EventTypeDeletedBlobFile) MarshalJSON() ([]byte, error) {
+	type alias EventTypeDeletedBlobFile
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "DeletedBlobFile", alias: alias(*v)})
+}
 
 // The library-user should write a warning string to the log.
 //
 // This event should *not* be reported to the end-user using a popup or something like that.
 type EventTypeWarning struct {
-	Kind string `json:"kind"`
-	Msg  string `json:"msg"`
+	Msg string `json:"msg"`
 }
 
 func (*EventTypeWarning) isEventTypeVariant() {}
 func (*EventTypeWarning) GetKind() string     { return "Warning" }
+func (v *EventTypeWarning) MarshalJSON() ([]byte, error) {
+	type alias EventTypeWarning
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Warning", alias: alias(*v)})
+}
 
 // The library-user should report an error to the end-user.
 //
@@ -634,33 +772,51 @@ func (*EventTypeWarning) GetKind() string     { return "Warning" }
 //
 // However, for ongoing processes (eg. configure()) or for functions that are expected to fail (eg. autocryptContinueKeyTransfer()) it might be better to delay showing these events until the function has really failed (returned false). It should be sufficient to report only the *last* error in a message box then.
 type EventTypeError struct {
-	Kind string `json:"kind"`
-	Msg  string `json:"msg"`
+	Msg string `json:"msg"`
 }
 
 func (*EventTypeError) isEventTypeVariant() {}
 func (*EventTypeError) GetKind() string     { return "Error" }
+func (v *EventTypeError) MarshalJSON() ([]byte, error) {
+	type alias EventTypeError
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Error", alias: alias(*v)})
+}
 
 // An action cannot be performed because the user is not in the group. Reported eg. after a call to setChatName(), setChatProfileImage(), addContactToChat(), removeContactFromChat(), and messages sending functions.
 type EventTypeErrorSelfNotInGroup struct {
-	Kind string `json:"kind"`
-	Msg  string `json:"msg"`
+	Msg string `json:"msg"`
 }
 
 func (*EventTypeErrorSelfNotInGroup) isEventTypeVariant() {}
 func (*EventTypeErrorSelfNotInGroup) GetKind() string     { return "ErrorSelfNotInGroup" }
+func (v *EventTypeErrorSelfNotInGroup) MarshalJSON() ([]byte, error) {
+	type alias EventTypeErrorSelfNotInGroup
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ErrorSelfNotInGroup", alias: alias(*v)})
+}
 
 // Messages or chats changed.  One or more messages or chats changed for various reasons in the database: - Messages sent, received or removed - Chats created, deleted or archived - A draft has been set
 type EventTypeMsgsChanged struct {
 	// Set if only a single chat is affected by the changes, otherwise 0.
 	ChatId uint32 `json:"chatId"`
-	Kind   string `json:"kind"`
 	// Set if only a single message is affected by the changes, otherwise 0.
 	MsgId uint32 `json:"msgId"`
 }
 
 func (*EventTypeMsgsChanged) isEventTypeVariant() {}
 func (*EventTypeMsgsChanged) GetKind() string     { return "MsgsChanged" }
+func (v *EventTypeMsgsChanged) MarshalJSON() ([]byte, error) {
+	type alias EventTypeMsgsChanged
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "MsgsChanged", alias: alias(*v)})
+}
 
 // Reactions for the message changed.
 type EventTypeReactionsChanged struct {
@@ -668,13 +824,19 @@ type EventTypeReactionsChanged struct {
 	ChatId uint32 `json:"chatId"`
 	// ID of the contact whose reaction set is changed.
 	ContactId uint32 `json:"contactId"`
-	Kind      string `json:"kind"`
 	// ID of the message for which reactions were changed.
 	MsgId uint32 `json:"msgId"`
 }
 
 func (*EventTypeReactionsChanged) isEventTypeVariant() {}
 func (*EventTypeReactionsChanged) GetKind() string     { return "ReactionsChanged" }
+func (v *EventTypeReactionsChanged) MarshalJSON() ([]byte, error) {
+	type alias EventTypeReactionsChanged
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ReactionsChanged", alias: alias(*v)})
+}
 
 // A reaction to one's own sent message received. Typically, the UI will show a notification for that.
 //
@@ -684,7 +846,6 @@ type EventTypeIncomingReaction struct {
 	ChatId uint32 `json:"chatId"`
 	// ID of the contact whose reaction set is changed.
 	ContactId uint32 `json:"contactId"`
-	Kind      string `json:"kind"`
 	// ID of the message for which reactions were changed.
 	MsgId uint32 `json:"msgId"`
 	// The reaction.
@@ -693,6 +854,13 @@ type EventTypeIncomingReaction struct {
 
 func (*EventTypeIncomingReaction) isEventTypeVariant() {}
 func (*EventTypeIncomingReaction) GetKind() string     { return "IncomingReaction" }
+func (v *EventTypeIncomingReaction) MarshalJSON() ([]byte, error) {
+	type alias EventTypeIncomingReaction
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "IncomingReaction", alias: alias(*v)})
+}
 
 // Incoming webxdc info or summary update, should be notified.
 type EventTypeIncomingWebxdcNotify struct {
@@ -702,7 +870,6 @@ type EventTypeIncomingWebxdcNotify struct {
 	ContactId uint32 `json:"contactId"`
 	// Link assigned to this notification, if any.
 	Href *string `json:"href,omitempty"`
-	Kind string  `json:"kind"`
 	// ID of the added info message or webxdc instance in case of summary change.
 	MsgId uint32 `json:"msgId"`
 	// Text to notify.
@@ -711,6 +878,13 @@ type EventTypeIncomingWebxdcNotify struct {
 
 func (*EventTypeIncomingWebxdcNotify) isEventTypeVariant() {}
 func (*EventTypeIncomingWebxdcNotify) GetKind() string     { return "IncomingWebxdcNotify" }
+func (v *EventTypeIncomingWebxdcNotify) MarshalJSON() ([]byte, error) {
+	type alias EventTypeIncomingWebxdcNotify
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "IncomingWebxdcNotify", alias: alias(*v)})
+}
 
 // There is a fresh message. Typically, the user will show a notification when receiving this message.
 //
@@ -718,66 +892,102 @@ func (*EventTypeIncomingWebxdcNotify) GetKind() string     { return "IncomingWeb
 type EventTypeIncomingMsg struct {
 	// ID of the chat where the message is assigned.
 	ChatId uint32 `json:"chatId"`
-	Kind   string `json:"kind"`
 	// ID of the message.
 	MsgId uint32 `json:"msgId"`
 }
 
 func (*EventTypeIncomingMsg) isEventTypeVariant() {}
 func (*EventTypeIncomingMsg) GetKind() string     { return "IncomingMsg" }
+func (v *EventTypeIncomingMsg) MarshalJSON() ([]byte, error) {
+	type alias EventTypeIncomingMsg
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "IncomingMsg", alias: alias(*v)})
+}
 
 // Downloading a bunch of messages just finished. This is an event to allow the UI to only show one notification per message bunch, instead of cluttering the user with many notifications.
 type EventTypeIncomingMsgBunch struct {
-	Kind string `json:"kind"`
 }
 
 func (*EventTypeIncomingMsgBunch) isEventTypeVariant() {}
 func (*EventTypeIncomingMsgBunch) GetKind() string     { return "IncomingMsgBunch" }
+func (v *EventTypeIncomingMsgBunch) MarshalJSON() ([]byte, error) {
+	type alias EventTypeIncomingMsgBunch
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "IncomingMsgBunch", alias: alias(*v)})
+}
 
 // Messages were seen or noticed. chat id is always set.
 type EventTypeMsgsNoticed struct {
 	ChatId uint32 `json:"chatId"`
-	Kind   string `json:"kind"`
 }
 
 func (*EventTypeMsgsNoticed) isEventTypeVariant() {}
 func (*EventTypeMsgsNoticed) GetKind() string     { return "MsgsNoticed" }
+func (v *EventTypeMsgsNoticed) MarshalJSON() ([]byte, error) {
+	type alias EventTypeMsgsNoticed
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "MsgsNoticed", alias: alias(*v)})
+}
 
 // A single message is sent successfully. State changed from  DC_STATE_OUT_PENDING to DC_STATE_OUT_DELIVERED, see `Message.state`.
 type EventTypeMsgDelivered struct {
 	// ID of the chat which the message belongs to.
 	ChatId uint32 `json:"chatId"`
-	Kind   string `json:"kind"`
 	// ID of the message that was successfully sent.
 	MsgId uint32 `json:"msgId"`
 }
 
 func (*EventTypeMsgDelivered) isEventTypeVariant() {}
 func (*EventTypeMsgDelivered) GetKind() string     { return "MsgDelivered" }
+func (v *EventTypeMsgDelivered) MarshalJSON() ([]byte, error) {
+	type alias EventTypeMsgDelivered
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "MsgDelivered", alias: alias(*v)})
+}
 
 // A single message could not be sent. State changed from DC_STATE_OUT_PENDING or DC_STATE_OUT_DELIVERED to DC_STATE_OUT_FAILED, see `Message.state`.
 type EventTypeMsgFailed struct {
 	// ID of the chat which the message belongs to.
 	ChatId uint32 `json:"chatId"`
-	Kind   string `json:"kind"`
 	// ID of the message that could not be sent.
 	MsgId uint32 `json:"msgId"`
 }
 
 func (*EventTypeMsgFailed) isEventTypeVariant() {}
 func (*EventTypeMsgFailed) GetKind() string     { return "MsgFailed" }
+func (v *EventTypeMsgFailed) MarshalJSON() ([]byte, error) {
+	type alias EventTypeMsgFailed
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "MsgFailed", alias: alias(*v)})
+}
 
 // A single message is read by the receiver. State changed from DC_STATE_OUT_DELIVERED to DC_STATE_OUT_MDN_RCVD, see `Message.state`.
 type EventTypeMsgRead struct {
 	// ID of the chat which the message belongs to.
 	ChatId uint32 `json:"chatId"`
-	Kind   string `json:"kind"`
 	// ID of the message that was read.
 	MsgId uint32 `json:"msgId"`
 }
 
 func (*EventTypeMsgRead) isEventTypeVariant() {}
 func (*EventTypeMsgRead) GetKind() string     { return "MsgRead" }
+func (v *EventTypeMsgRead) MarshalJSON() ([]byte, error) {
+	type alias EventTypeMsgRead
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "MsgRead", alias: alias(*v)})
+}
 
 // A single message was deleted.
 //
@@ -789,72 +999,107 @@ func (*EventTypeMsgRead) GetKind() string     { return "MsgRead" }
 type EventTypeMsgDeleted struct {
 	// ID of the chat where the message was prior to deletion. Never 0.
 	ChatId uint32 `json:"chatId"`
-	Kind   string `json:"kind"`
 	// ID of the deleted message. Never 0.
 	MsgId uint32 `json:"msgId"`
 }
 
 func (*EventTypeMsgDeleted) isEventTypeVariant() {}
 func (*EventTypeMsgDeleted) GetKind() string     { return "MsgDeleted" }
+func (v *EventTypeMsgDeleted) MarshalJSON() ([]byte, error) {
+	type alias EventTypeMsgDeleted
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "MsgDeleted", alias: alias(*v)})
+}
 
 // Chat changed.  The name or the image of a chat group was changed or members were added or removed. See setChatName(), setChatProfileImage(), addContactToChat() and removeContactFromChat().
 //
 // This event does not include ephemeral timer modification, which is a separate event.
 type EventTypeChatModified struct {
 	ChatId uint32 `json:"chatId"`
-	Kind   string `json:"kind"`
 }
 
 func (*EventTypeChatModified) isEventTypeVariant() {}
 func (*EventTypeChatModified) GetKind() string     { return "ChatModified" }
+func (v *EventTypeChatModified) MarshalJSON() ([]byte, error) {
+	type alias EventTypeChatModified
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ChatModified", alias: alias(*v)})
+}
 
 // Chat ephemeral timer changed.
 type EventTypeChatEphemeralTimerModified struct {
 	// Chat ID.
 	ChatId uint32 `json:"chatId"`
-	Kind   string `json:"kind"`
 	// New ephemeral timer value.
 	Timer uint32 `json:"timer"`
 }
 
 func (*EventTypeChatEphemeralTimerModified) isEventTypeVariant() {}
 func (*EventTypeChatEphemeralTimerModified) GetKind() string     { return "ChatEphemeralTimerModified" }
+func (v *EventTypeChatEphemeralTimerModified) MarshalJSON() ([]byte, error) {
+	type alias EventTypeChatEphemeralTimerModified
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ChatEphemeralTimerModified", alias: alias(*v)})
+}
 
 // Chat deleted.
 type EventTypeChatDeleted struct {
 	// Chat ID.
 	Chat_id uint32 `json:"chat_id"`
-	Kind    string `json:"kind"`
 }
 
 func (*EventTypeChatDeleted) isEventTypeVariant() {}
 func (*EventTypeChatDeleted) GetKind() string     { return "ChatDeleted" }
+func (v *EventTypeChatDeleted) MarshalJSON() ([]byte, error) {
+	type alias EventTypeChatDeleted
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ChatDeleted", alias: alias(*v)})
+}
 
 // Contact(s) created, renamed, blocked or deleted.
 type EventTypeContactsChanged struct {
 	// If set, this is the contact_id of an added contact that should be selected.
 	ContactId *uint32 `json:"contactId,omitempty"`
-	Kind      string  `json:"kind"`
 }
 
 func (*EventTypeContactsChanged) isEventTypeVariant() {}
 func (*EventTypeContactsChanged) GetKind() string     { return "ContactsChanged" }
+func (v *EventTypeContactsChanged) MarshalJSON() ([]byte, error) {
+	type alias EventTypeContactsChanged
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ContactsChanged", alias: alias(*v)})
+}
 
 // Location of one or more contact has changed.
 type EventTypeLocationChanged struct {
 	// contact_id of the contact for which the location has changed. If the locations of several contacts have been changed, this parameter is set to `None`.
 	ContactId *uint32 `json:"contactId,omitempty"`
-	Kind      string  `json:"kind"`
 }
 
 func (*EventTypeLocationChanged) isEventTypeVariant() {}
 func (*EventTypeLocationChanged) GetKind() string     { return "LocationChanged" }
+func (v *EventTypeLocationChanged) MarshalJSON() ([]byte, error) {
+	type alias EventTypeLocationChanged
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "LocationChanged", alias: alias(*v)})
+}
 
 // Inform about the configuration progress started by configure().
 type EventTypeConfigureProgress struct {
 	// Progress comment or error, something to display to the user.
 	Comment *string `json:"comment,omitempty"`
-	Kind    string  `json:"kind"`
 	// Progress.
 	//
 	// 0=error, 1-999=progress in permille, 1000=success and done
@@ -863,16 +1108,29 @@ type EventTypeConfigureProgress struct {
 
 func (*EventTypeConfigureProgress) isEventTypeVariant() {}
 func (*EventTypeConfigureProgress) GetKind() string     { return "ConfigureProgress" }
+func (v *EventTypeConfigureProgress) MarshalJSON() ([]byte, error) {
+	type alias EventTypeConfigureProgress
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ConfigureProgress", alias: alias(*v)})
+}
 
 // Inform about the import/export progress started by imex().
 type EventTypeImexProgress struct {
-	Kind string `json:"kind"`
 	// 0=error, 1-999=progress in permille, 1000=success and done
 	Progress uint16 `json:"progress"`
 }
 
 func (*EventTypeImexProgress) isEventTypeVariant() {}
 func (*EventTypeImexProgress) GetKind() string     { return "ImexProgress" }
+func (v *EventTypeImexProgress) MarshalJSON() ([]byte, error) {
+	type alias EventTypeImexProgress
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ImexProgress", alias: alias(*v)})
+}
 
 // A file has been exported. A file has been written by imex(). This event may be sent multiple times by a single call to imex().
 //
@@ -880,12 +1138,18 @@ func (*EventTypeImexProgress) GetKind() string     { return "ImexProgress" }
 //
 // @param data2 0
 type EventTypeImexFileWritten struct {
-	Kind string `json:"kind"`
 	Path string `json:"path"`
 }
 
 func (*EventTypeImexFileWritten) isEventTypeVariant() {}
 func (*EventTypeImexFileWritten) GetKind() string     { return "ImexFileWritten" }
+func (v *EventTypeImexFileWritten) MarshalJSON() ([]byte, error) {
+	type alias EventTypeImexFileWritten
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ImexFileWritten", alias: alias(*v)})
+}
 
 // Progress event sent when SecureJoin protocol has finished from the view of the inviter (Alice, the person who shows the QR code).
 //
@@ -897,54 +1161,83 @@ type EventTypeSecurejoinInviterProgress struct {
 	ChatType ChatType `json:"chatType"`
 	// ID of the contact that wants to join.
 	ContactId uint32 `json:"contactId"`
-	Kind      string `json:"kind"`
 	// Progress, always 1000.
 	Progress uint16 `json:"progress"`
 }
 
 func (*EventTypeSecurejoinInviterProgress) isEventTypeVariant() {}
 func (*EventTypeSecurejoinInviterProgress) GetKind() string     { return "SecurejoinInviterProgress" }
+func (v *EventTypeSecurejoinInviterProgress) MarshalJSON() ([]byte, error) {
+	type alias EventTypeSecurejoinInviterProgress
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "SecurejoinInviterProgress", alias: alias(*v)})
+}
 
 // Progress information of a secure-join handshake from the view of the joiner (Bob, the person who scans the QR code). The events are typically sent while secureJoin(), which may take some time, is executed.
 type EventTypeSecurejoinJoinerProgress struct {
 	// ID of the inviting contact.
 	ContactId uint32 `json:"contactId"`
-	Kind      string `json:"kind"`
 	// Progress as: 400=vg-/vc-request-with-auth sent, typically shown as "alice@addr verified, introducing myself." (Bob has verified alice and waits until Alice does the same for him) 1000=vg-member-added/vc-contact-confirm received
 	Progress uint16 `json:"progress"`
 }
 
 func (*EventTypeSecurejoinJoinerProgress) isEventTypeVariant() {}
 func (*EventTypeSecurejoinJoinerProgress) GetKind() string     { return "SecurejoinJoinerProgress" }
+func (v *EventTypeSecurejoinJoinerProgress) MarshalJSON() ([]byte, error) {
+	type alias EventTypeSecurejoinJoinerProgress
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "SecurejoinJoinerProgress", alias: alias(*v)})
+}
 
 // The connectivity to the server changed. This means that you should refresh the connectivity view and possibly the connectivtiy HTML; see getConnectivity() and getConnectivityHtml() for details.
 type EventTypeConnectivityChanged struct {
-	Kind string `json:"kind"`
 }
 
 func (*EventTypeConnectivityChanged) isEventTypeVariant() {}
 func (*EventTypeConnectivityChanged) GetKind() string     { return "ConnectivityChanged" }
+func (v *EventTypeConnectivityChanged) MarshalJSON() ([]byte, error) {
+	type alias EventTypeConnectivityChanged
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ConnectivityChanged", alias: alias(*v)})
+}
 
 // Deprecated by `ConfigSynced`.
 type EventTypeSelfavatarChanged struct {
-	Kind string `json:"kind"`
 }
 
 func (*EventTypeSelfavatarChanged) isEventTypeVariant() {}
 func (*EventTypeSelfavatarChanged) GetKind() string     { return "SelfavatarChanged" }
+func (v *EventTypeSelfavatarChanged) MarshalJSON() ([]byte, error) {
+	type alias EventTypeSelfavatarChanged
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "SelfavatarChanged", alias: alias(*v)})
+}
 
 // A multi-device synced config value changed. Maybe the app needs to refresh smth. For uniformity this is emitted on the source device too. The value isn't here, otherwise it would be logged which might not be good for privacy.
 type EventTypeConfigSynced struct {
 	// Configuration key.
-	Key  string `json:"key"`
-	Kind string `json:"kind"`
+	Key string `json:"key"`
 }
 
 func (*EventTypeConfigSynced) isEventTypeVariant() {}
 func (*EventTypeConfigSynced) GetKind() string     { return "ConfigSynced" }
+func (v *EventTypeConfigSynced) MarshalJSON() ([]byte, error) {
+	type alias EventTypeConfigSynced
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ConfigSynced", alias: alias(*v)})
+}
 
 type EventTypeWebxdcStatusUpdate struct {
-	Kind string `json:"kind"`
 	// Message ID.
 	MsgId uint32 `json:"msgId"`
 	// Status update ID.
@@ -953,22 +1246,34 @@ type EventTypeWebxdcStatusUpdate struct {
 
 func (*EventTypeWebxdcStatusUpdate) isEventTypeVariant() {}
 func (*EventTypeWebxdcStatusUpdate) GetKind() string     { return "WebxdcStatusUpdate" }
+func (v *EventTypeWebxdcStatusUpdate) MarshalJSON() ([]byte, error) {
+	type alias EventTypeWebxdcStatusUpdate
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "WebxdcStatusUpdate", alias: alias(*v)})
+}
 
 // Data received over an ephemeral peer channel.
 type EventTypeWebxdcRealtimeData struct {
 	// Realtime data.
-	Data []int  `json:"data"`
-	Kind string `json:"kind"`
+	Data []int `json:"data"`
 	// Message ID.
 	MsgId uint32 `json:"msgId"`
 }
 
 func (*EventTypeWebxdcRealtimeData) isEventTypeVariant() {}
 func (*EventTypeWebxdcRealtimeData) GetKind() string     { return "WebxdcRealtimeData" }
+func (v *EventTypeWebxdcRealtimeData) MarshalJSON() ([]byte, error) {
+	type alias EventTypeWebxdcRealtimeData
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "WebxdcRealtimeData", alias: alias(*v)})
+}
 
 // Advertisement received over an ephemeral peer channel. This can be used by bots to initiate peer-to-peer communication from their side.
 type EventTypeWebxdcRealtimeAdvertisementReceived struct {
-	Kind string `json:"kind"`
 	// Message ID of the webxdc instance.
 	MsgId uint32 `json:"msgId"`
 }
@@ -977,84 +1282,132 @@ func (*EventTypeWebxdcRealtimeAdvertisementReceived) isEventTypeVariant() {}
 func (*EventTypeWebxdcRealtimeAdvertisementReceived) GetKind() string {
 	return "WebxdcRealtimeAdvertisementReceived"
 }
+func (v *EventTypeWebxdcRealtimeAdvertisementReceived) MarshalJSON() ([]byte, error) {
+	type alias EventTypeWebxdcRealtimeAdvertisementReceived
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "WebxdcRealtimeAdvertisementReceived", alias: alias(*v)})
+}
 
 // Inform that a message containing a webxdc instance has been deleted
 type EventTypeWebxdcInstanceDeleted struct {
-	Kind string `json:"kind"`
 	// ID of the deleted message.
 	MsgId uint32 `json:"msgId"`
 }
 
 func (*EventTypeWebxdcInstanceDeleted) isEventTypeVariant() {}
 func (*EventTypeWebxdcInstanceDeleted) GetKind() string     { return "WebxdcInstanceDeleted" }
+func (v *EventTypeWebxdcInstanceDeleted) MarshalJSON() ([]byte, error) {
+	type alias EventTypeWebxdcInstanceDeleted
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "WebxdcInstanceDeleted", alias: alias(*v)})
+}
 
 // Tells that the Background fetch was completed (or timed out). This event acts as a marker, when you reach this event you can be sure that all events emitted during the background fetch were processed.
 //
 // This event is only emitted by the account manager
 type EventTypeAccountsBackgroundFetchDone struct {
-	Kind string `json:"kind"`
 }
 
 func (*EventTypeAccountsBackgroundFetchDone) isEventTypeVariant() {}
 func (*EventTypeAccountsBackgroundFetchDone) GetKind() string     { return "AccountsBackgroundFetchDone" }
+func (v *EventTypeAccountsBackgroundFetchDone) MarshalJSON() ([]byte, error) {
+	type alias EventTypeAccountsBackgroundFetchDone
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "AccountsBackgroundFetchDone", alias: alias(*v)})
+}
 
 // Inform that set of chats or the order of the chats in the chatlist has changed.
 //
 // Sometimes this is emitted together with `UIChatlistItemChanged`.
 type EventTypeChatlistChanged struct {
-	Kind string `json:"kind"`
 }
 
 func (*EventTypeChatlistChanged) isEventTypeVariant() {}
 func (*EventTypeChatlistChanged) GetKind() string     { return "ChatlistChanged" }
+func (v *EventTypeChatlistChanged) MarshalJSON() ([]byte, error) {
+	type alias EventTypeChatlistChanged
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ChatlistChanged", alias: alias(*v)})
+}
 
 // Inform that a single chat list item changed and needs to be rerendered. If `chat_id` is set to None, then all currently visible chats need to be rerendered, and all not-visible items need to be cleared from cache if the UI has a cache.
 type EventTypeChatlistItemChanged struct {
 	// ID of the changed chat
 	ChatId *uint32 `json:"chatId,omitempty"`
-	Kind   string  `json:"kind"`
 }
 
 func (*EventTypeChatlistItemChanged) isEventTypeVariant() {}
 func (*EventTypeChatlistItemChanged) GetKind() string     { return "ChatlistItemChanged" }
+func (v *EventTypeChatlistItemChanged) MarshalJSON() ([]byte, error) {
+	type alias EventTypeChatlistItemChanged
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "ChatlistItemChanged", alias: alias(*v)})
+}
 
 // Inform that the list of accounts has changed (an account removed or added or (not yet implemented) the account order changes)
 //
 // This event is only emitted by the account manager
 type EventTypeAccountsChanged struct {
-	Kind string `json:"kind"`
 }
 
 func (*EventTypeAccountsChanged) isEventTypeVariant() {}
 func (*EventTypeAccountsChanged) GetKind() string     { return "AccountsChanged" }
+func (v *EventTypeAccountsChanged) MarshalJSON() ([]byte, error) {
+	type alias EventTypeAccountsChanged
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "AccountsChanged", alias: alias(*v)})
+}
 
 // Inform that an account property that might be shown in the account list changed, namely: - is_configured (see is_configured()) - displayname - selfavatar - private_tag
 //
 // This event is emitted from the account whose property changed.
 type EventTypeAccountsItemChanged struct {
-	Kind string `json:"kind"`
 }
 
 func (*EventTypeAccountsItemChanged) isEventTypeVariant() {}
 func (*EventTypeAccountsItemChanged) GetKind() string     { return "AccountsItemChanged" }
+func (v *EventTypeAccountsItemChanged) MarshalJSON() ([]byte, error) {
+	type alias EventTypeAccountsItemChanged
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "AccountsItemChanged", alias: alias(*v)})
+}
 
 // Inform than some events have been skipped due to event channel overflow.
 type EventTypeEventChannelOverflow struct {
-	Kind string `json:"kind"`
 	// Number of events skipped.
 	N uint64 `json:"n"`
 }
 
 func (*EventTypeEventChannelOverflow) isEventTypeVariant() {}
 func (*EventTypeEventChannelOverflow) GetKind() string     { return "EventChannelOverflow" }
+func (v *EventTypeEventChannelOverflow) MarshalJSON() ([]byte, error) {
+	type alias EventTypeEventChannelOverflow
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "EventChannelOverflow", alias: alias(*v)})
+}
 
 // Incoming call.
 type EventTypeIncomingCall struct {
 	// ID of the chat which the message belongs to.
 	Chat_id uint32 `json:"chat_id"`
 	// True if incoming call is a video call.
-	Has_video bool   `json:"has_video"`
-	Kind      string `json:"kind"`
+	Has_video bool `json:"has_video"`
 	// ID of the info message referring to the call.
 	Msg_id uint32 `json:"msg_id"`
 	// User-defined info as passed to place_outgoing_call()
@@ -1063,18 +1416,31 @@ type EventTypeIncomingCall struct {
 
 func (*EventTypeIncomingCall) isEventTypeVariant() {}
 func (*EventTypeIncomingCall) GetKind() string     { return "IncomingCall" }
+func (v *EventTypeIncomingCall) MarshalJSON() ([]byte, error) {
+	type alias EventTypeIncomingCall
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "IncomingCall", alias: alias(*v)})
+}
 
 // Incoming call accepted. This is esp. interesting to stop ringing on other devices.
 type EventTypeIncomingCallAccepted struct {
 	// ID of the chat which the message belongs to.
 	Chat_id uint32 `json:"chat_id"`
-	Kind    string `json:"kind"`
 	// ID of the info message referring to the call.
 	Msg_id uint32 `json:"msg_id"`
 }
 
 func (*EventTypeIncomingCallAccepted) isEventTypeVariant() {}
 func (*EventTypeIncomingCallAccepted) GetKind() string     { return "IncomingCallAccepted" }
+func (v *EventTypeIncomingCallAccepted) MarshalJSON() ([]byte, error) {
+	type alias EventTypeIncomingCallAccepted
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "IncomingCallAccepted", alias: alias(*v)})
+}
 
 // Outgoing call accepted.
 type EventTypeOutgoingCallAccepted struct {
@@ -1082,25 +1448,37 @@ type EventTypeOutgoingCallAccepted struct {
 	Accept_call_info string `json:"accept_call_info"`
 	// ID of the chat which the message belongs to.
 	Chat_id uint32 `json:"chat_id"`
-	Kind    string `json:"kind"`
 	// ID of the info message referring to the call.
 	Msg_id uint32 `json:"msg_id"`
 }
 
 func (*EventTypeOutgoingCallAccepted) isEventTypeVariant() {}
 func (*EventTypeOutgoingCallAccepted) GetKind() string     { return "OutgoingCallAccepted" }
+func (v *EventTypeOutgoingCallAccepted) MarshalJSON() ([]byte, error) {
+	type alias EventTypeOutgoingCallAccepted
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "OutgoingCallAccepted", alias: alias(*v)})
+}
 
 // Call ended.
 type EventTypeCallEnded struct {
 	// ID of the chat which the message belongs to.
 	Chat_id uint32 `json:"chat_id"`
-	Kind    string `json:"kind"`
 	// ID of the info message referring to the call.
 	Msg_id uint32 `json:"msg_id"`
 }
 
 func (*EventTypeCallEnded) isEventTypeVariant() {}
 func (*EventTypeCallEnded) GetKind() string     { return "CallEnded" }
+func (v *EventTypeCallEnded) MarshalJSON() ([]byte, error) {
+	type alias EventTypeCallEnded
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "CallEnded", alias: alias(*v)})
+}
 
 // One or more transports has changed.
 //
@@ -1108,11 +1486,17 @@ func (*EventTypeCallEnded) GetKind() string     { return "CallEnded" }
 //
 // This event is emitted when transport synchronization messages arrives, but not when the UI modifies the transport list by itself.
 type EventTypeTransportsModified struct {
-	Kind string `json:"kind"`
 }
 
 func (*EventTypeTransportsModified) isEventTypeVariant() {}
 func (*EventTypeTransportsModified) GetKind() string     { return "TransportsModified" }
+func (v *EventTypeTransportsModified) MarshalJSON() ([]byte, error) {
+	type alias EventTypeTransportsModified
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "TransportsModified", alias: alias(*v)})
+}
 
 func unmarshalEventType(data json.RawMessage, out *EventType) error {
 	var header struct {
@@ -1689,22 +2073,34 @@ type MessageListItem interface {
 }
 
 type MessageListItemMessage struct {
-	Kind   string `json:"kind"`
 	Msg_id uint32 `json:"msg_id"`
 }
 
 func (*MessageListItemMessage) isMessageListItemVariant() {}
 func (*MessageListItemMessage) GetKind() string           { return "message" }
+func (v *MessageListItemMessage) MarshalJSON() ([]byte, error) {
+	type alias MessageListItemMessage
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "message", alias: alias(*v)})
+}
 
 // Day marker, separating messages that correspond to different days according to local time.
 type MessageListItemDayMarker struct {
-	Kind string `json:"kind"`
 	// Marker timestamp, for day markers, in unix milliseconds
 	Timestamp int64 `json:"timestamp"`
 }
 
 func (*MessageListItemDayMarker) isMessageListItemVariant() {}
 func (*MessageListItemDayMarker) GetKind() string           { return "dayMarker" }
+func (v *MessageListItemDayMarker) MarshalJSON() ([]byte, error) {
+	type alias MessageListItemDayMarker
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "dayMarker", alias: alias(*v)})
+}
 
 func unmarshalMessageListItem(data json.RawMessage, out *MessageListItem) error {
 	var header struct {
@@ -1764,7 +2160,6 @@ type MessageLoadResultMessage struct {
 	IsForwarded        bool          `json:"isForwarded"`
 	IsInfo             bool          `json:"isInfo"`
 	IsSetupmessage     bool          `json:"isSetupmessage"`
-	Kind               string        `json:"kind"`
 	OriginalMsgId      *uint32       `json:"originalMsgId,omitempty"`
 	OverrideSenderName *string       `json:"overrideSenderName,omitempty"`
 	ParentId           *uint32       `json:"parentId,omitempty"`
@@ -1792,14 +2187,27 @@ type MessageLoadResultMessage struct {
 
 func (*MessageLoadResultMessage) isMessageLoadResultVariant() {}
 func (*MessageLoadResultMessage) GetKind() string             { return "message" }
+func (v *MessageLoadResultMessage) MarshalJSON() ([]byte, error) {
+	type alias MessageLoadResultMessage
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "message", alias: alias(*v)})
+}
 
 type MessageLoadResultLoadingError struct {
 	Error string `json:"error"`
-	Kind  string `json:"kind"`
 }
 
 func (*MessageLoadResultLoadingError) isMessageLoadResultVariant() {}
 func (*MessageLoadResultLoadingError) GetKind() string             { return "loadingError" }
+func (v *MessageLoadResultLoadingError) MarshalJSON() ([]byte, error) {
+	type alias MessageLoadResultLoadingError
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "loadingError", alias: alias(*v)})
+}
 
 func unmarshalMessageLoadResult(data json.RawMessage, out *MessageLoadResult) error {
 	var header struct {
@@ -1847,12 +2255,18 @@ type MessageQuote interface {
 }
 
 type MessageQuoteJustText struct {
-	Kind string `json:"kind"`
 	Text string `json:"text"`
 }
 
 func (*MessageQuoteJustText) isMessageQuoteVariant() {}
 func (*MessageQuoteJustText) GetKind() string        { return "JustText" }
+func (v *MessageQuoteJustText) MarshalJSON() ([]byte, error) {
+	type alias MessageQuoteJustText
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "JustText", alias: alias(*v)})
+}
 
 type MessageQuoteWithMessage struct {
 	AuthorDisplayColor string `json:"authorDisplayColor"`
@@ -1861,7 +2275,6 @@ type MessageQuoteWithMessage struct {
 	ChatId             uint32   `json:"chatId"`
 	Image              *string  `json:"image,omitempty"`
 	IsForwarded        bool     `json:"isForwarded"`
-	Kind               string   `json:"kind"`
 	MessageId          uint32   `json:"messageId"`
 	OverrideSenderName *string  `json:"overrideSenderName,omitempty"`
 	Text               string   `json:"text"`
@@ -1870,6 +2283,13 @@ type MessageQuoteWithMessage struct {
 
 func (*MessageQuoteWithMessage) isMessageQuoteVariant() {}
 func (*MessageQuoteWithMessage) GetKind() string        { return "WithMessage" }
+func (v *MessageQuoteWithMessage) MarshalJSON() ([]byte, error) {
+	type alias MessageQuoteWithMessage
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "WithMessage", alias: alias(*v)})
+}
 
 func unmarshalMessageQuote(data json.RawMessage, out *MessageQuote) error {
 	var header struct {
@@ -1926,26 +2346,44 @@ type MuteDuration interface {
 }
 
 type MuteDurationNotMuted struct {
-	Kind string `json:"kind"`
 }
 
 func (*MuteDurationNotMuted) isMuteDurationVariant() {}
 func (*MuteDurationNotMuted) GetKind() string        { return "NotMuted" }
+func (v *MuteDurationNotMuted) MarshalJSON() ([]byte, error) {
+	type alias MuteDurationNotMuted
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "NotMuted", alias: alias(*v)})
+}
 
 type MuteDurationForever struct {
-	Kind string `json:"kind"`
 }
 
 func (*MuteDurationForever) isMuteDurationVariant() {}
 func (*MuteDurationForever) GetKind() string        { return "Forever" }
+func (v *MuteDurationForever) MarshalJSON() ([]byte, error) {
+	type alias MuteDurationForever
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Forever", alias: alias(*v)})
+}
 
 type MuteDurationUntil struct {
-	Duration int64  `json:"duration"`
-	Kind     string `json:"kind"`
+	Duration int64 `json:"duration"`
 }
 
 func (*MuteDurationUntil) isMuteDurationVariant() {}
 func (*MuteDurationUntil) GetKind() string        { return "Until" }
+func (v *MuteDurationUntil) MarshalJSON() ([]byte, error) {
+	type alias MuteDurationUntil
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "Until", alias: alias(*v)})
+}
 
 type NotifyState string
 
@@ -1983,11 +2421,17 @@ type QrAskVerifyContact struct {
 	Fingerprint string `json:"fingerprint"`
 	// Invite number.
 	Invitenumber string `json:"invitenumber"`
-	Kind         string `json:"kind"`
 }
 
 func (*QrAskVerifyContact) isQrVariant()    {}
 func (*QrAskVerifyContact) GetKind() string { return "askVerifyContact" }
+func (v *QrAskVerifyContact) MarshalJSON() ([]byte, error) {
+	type alias QrAskVerifyContact
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "askVerifyContact", alias: alias(*v)})
+}
 
 // Ask the user whether to join the group.
 type QrAskVerifyGroup struct {
@@ -2003,11 +2447,17 @@ type QrAskVerifyGroup struct {
 	Grpname string `json:"grpname"`
 	// Invite number.
 	Invitenumber string `json:"invitenumber"`
-	Kind         string `json:"kind"`
 }
 
 func (*QrAskVerifyGroup) isQrVariant()    {}
 func (*QrAskVerifyGroup) GetKind() string { return "askVerifyGroup" }
+func (v *QrAskVerifyGroup) MarshalJSON() ([]byte, error) {
+	type alias QrAskVerifyGroup
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "askVerifyGroup", alias: alias(*v)})
+}
 
 // Ask the user whether to join the broadcast channel.
 type QrAskJoinBroadcast struct {
@@ -2021,13 +2471,19 @@ type QrAskJoinBroadcast struct {
 	Grpid string `json:"grpid"`
 	// Invite number.
 	Invitenumber string `json:"invitenumber"`
-	Kind         string `json:"kind"`
 	// The user-visible name of this broadcast channel
 	Name string `json:"name"`
 }
 
 func (*QrAskJoinBroadcast) isQrVariant()    {}
 func (*QrAskJoinBroadcast) GetKind() string { return "askJoinBroadcast" }
+func (v *QrAskJoinBroadcast) MarshalJSON() ([]byte, error) {
+	type alias QrAskJoinBroadcast
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "askJoinBroadcast", alias: alias(*v)})
+}
 
 // Contact fingerprint is verified.
 //
@@ -2035,70 +2491,112 @@ func (*QrAskJoinBroadcast) GetKind() string { return "askJoinBroadcast" }
 type QrFprOk struct {
 	// Contact ID.
 	Contact_id uint32 `json:"contact_id"`
-	Kind       string `json:"kind"`
 }
 
 func (*QrFprOk) isQrVariant()    {}
 func (*QrFprOk) GetKind() string { return "fprOk" }
+func (v *QrFprOk) MarshalJSON() ([]byte, error) {
+	type alias QrFprOk
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "fprOk", alias: alias(*v)})
+}
 
 // Scanned fingerprint does not match the last seen fingerprint.
 type QrFprMismatch struct {
 	// Contact ID.
 	Contact_id *uint32 `json:"contact_id,omitempty"`
-	Kind       string  `json:"kind"`
 }
 
 func (*QrFprMismatch) isQrVariant()    {}
 func (*QrFprMismatch) GetKind() string { return "fprMismatch" }
+func (v *QrFprMismatch) MarshalJSON() ([]byte, error) {
+	type alias QrFprMismatch
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "fprMismatch", alias: alias(*v)})
+}
 
 // The scanned QR code contains a fingerprint but no e-mail address.
 type QrFprWithoutAddr struct {
 	// Key fingerprint.
 	Fingerprint string `json:"fingerprint"`
-	Kind        string `json:"kind"`
 }
 
 func (*QrFprWithoutAddr) isQrVariant()    {}
 func (*QrFprWithoutAddr) GetKind() string { return "fprWithoutAddr" }
+func (v *QrFprWithoutAddr) MarshalJSON() ([]byte, error) {
+	type alias QrFprWithoutAddr
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "fprWithoutAddr", alias: alias(*v)})
+}
 
 // Ask the user if they want to create an account on the given domain.
 type QrAccount struct {
 	// Server domain name.
 	Domain string `json:"domain"`
-	Kind   string `json:"kind"`
 }
 
 func (*QrAccount) isQrVariant()    {}
 func (*QrAccount) GetKind() string { return "account" }
+func (v *QrAccount) MarshalJSON() ([]byte, error) {
+	type alias QrAccount
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "account", alias: alias(*v)})
+}
 
 // Provides a backup that can be retrieved using iroh-net based backup transfer protocol.
 type QrBackup2 struct {
 	// Authentication token.
 	Auth_token string `json:"auth_token"`
-	Kind       string `json:"kind"`
 	// Iroh node address.
 	Node_addr string `json:"node_addr"`
 }
 
 func (*QrBackup2) isQrVariant()    {}
 func (*QrBackup2) GetKind() string { return "backup2" }
+func (v *QrBackup2) MarshalJSON() ([]byte, error) {
+	type alias QrBackup2
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "backup2", alias: alias(*v)})
+}
 
 type QrBackupTooNew struct {
-	Kind string `json:"kind"`
 }
 
 func (*QrBackupTooNew) isQrVariant()    {}
 func (*QrBackupTooNew) GetKind() string { return "backupTooNew" }
+func (v *QrBackupTooNew) MarshalJSON() ([]byte, error) {
+	type alias QrBackupTooNew
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "backupTooNew", alias: alias(*v)})
+}
 
 // Ask the user if they want to use the given service for video chats.
 type QrWebrtcInstance struct {
 	Domain           string `json:"domain"`
 	Instance_pattern string `json:"instance_pattern"`
-	Kind             string `json:"kind"`
 }
 
 func (*QrWebrtcInstance) isQrVariant()    {}
 func (*QrWebrtcInstance) GetKind() string { return "webrtcInstance" }
+func (v *QrWebrtcInstance) MarshalJSON() ([]byte, error) {
+	type alias QrWebrtcInstance
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "webrtcInstance", alias: alias(*v)})
+}
 
 // Ask the user if they want to use the given proxy.
 //
@@ -2106,7 +2604,6 @@ func (*QrWebrtcInstance) GetKind() string { return "webrtcInstance" }
 type QrProxy struct {
 	// Host extracted from the URL to display in the UI.
 	Host string `json:"host"`
-	Kind string `json:"kind"`
 	// Port extracted from the URL to display in the UI.
 	Port uint16 `json:"port"`
 	// Proxy URL.
@@ -2117,6 +2614,13 @@ type QrProxy struct {
 
 func (*QrProxy) isQrVariant()    {}
 func (*QrProxy) GetKind() string { return "proxy" }
+func (v *QrProxy) MarshalJSON() ([]byte, error) {
+	type alias QrProxy
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "proxy", alias: alias(*v)})
+}
 
 // Contact address is scanned.
 //
@@ -2126,33 +2630,51 @@ type QrAddr struct {
 	Contact_id uint32 `json:"contact_id"`
 	// Draft message.
 	Draft *string `json:"draft,omitempty"`
-	Kind  string  `json:"kind"`
 }
 
 func (*QrAddr) isQrVariant()    {}
 func (*QrAddr) GetKind() string { return "addr" }
+func (v *QrAddr) MarshalJSON() ([]byte, error) {
+	type alias QrAddr
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "addr", alias: alias(*v)})
+}
 
 // URL scanned.
 //
 // Ask the user if they want to open a browser or copy the URL to clipboard.
 type QrUrl struct {
-	Kind string `json:"kind"`
-	Url  string `json:"url"`
+	Url string `json:"url"`
 }
 
 func (*QrUrl) isQrVariant()    {}
 func (*QrUrl) GetKind() string { return "url" }
+func (v *QrUrl) MarshalJSON() ([]byte, error) {
+	type alias QrUrl
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "url", alias: alias(*v)})
+}
 
 // Text scanned.
 //
 // Ask the user if they want to copy the text to clipboard.
 type QrText struct {
-	Kind string `json:"kind"`
 	Text string `json:"text"`
 }
 
 func (*QrText) isQrVariant()    {}
 func (*QrText) GetKind() string { return "text" }
+func (v *QrText) MarshalJSON() ([]byte, error) {
+	type alias QrText
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "text", alias: alias(*v)})
+}
 
 // Ask the user if they want to withdraw their own QR code.
 type QrWithdrawVerifyContact struct {
@@ -2164,11 +2686,17 @@ type QrWithdrawVerifyContact struct {
 	Fingerprint string `json:"fingerprint"`
 	// Invite number.
 	Invitenumber string `json:"invitenumber"`
-	Kind         string `json:"kind"`
 }
 
 func (*QrWithdrawVerifyContact) isQrVariant()    {}
 func (*QrWithdrawVerifyContact) GetKind() string { return "withdrawVerifyContact" }
+func (v *QrWithdrawVerifyContact) MarshalJSON() ([]byte, error) {
+	type alias QrWithdrawVerifyContact
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "withdrawVerifyContact", alias: alias(*v)})
+}
 
 // Ask the user if they want to withdraw their own group invite QR code.
 type QrWithdrawVerifyGroup struct {
@@ -2184,11 +2712,17 @@ type QrWithdrawVerifyGroup struct {
 	Grpname string `json:"grpname"`
 	// Invite number.
 	Invitenumber string `json:"invitenumber"`
-	Kind         string `json:"kind"`
 }
 
 func (*QrWithdrawVerifyGroup) isQrVariant()    {}
 func (*QrWithdrawVerifyGroup) GetKind() string { return "withdrawVerifyGroup" }
+func (v *QrWithdrawVerifyGroup) MarshalJSON() ([]byte, error) {
+	type alias QrWithdrawVerifyGroup
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "withdrawVerifyGroup", alias: alias(*v)})
+}
 
 // Ask the user if they want to withdraw their own broadcast channel invite QR code.
 type QrWithdrawJoinBroadcast struct {
@@ -2202,13 +2736,19 @@ type QrWithdrawJoinBroadcast struct {
 	Grpid string `json:"grpid"`
 	// Invite number.
 	Invitenumber string `json:"invitenumber"`
-	Kind         string `json:"kind"`
 	// Broadcast name.
 	Name string `json:"name"`
 }
 
 func (*QrWithdrawJoinBroadcast) isQrVariant()    {}
 func (*QrWithdrawJoinBroadcast) GetKind() string { return "withdrawJoinBroadcast" }
+func (v *QrWithdrawJoinBroadcast) MarshalJSON() ([]byte, error) {
+	type alias QrWithdrawJoinBroadcast
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "withdrawJoinBroadcast", alias: alias(*v)})
+}
 
 // Ask the user if they want to revive their own QR code.
 type QrReviveVerifyContact struct {
@@ -2220,11 +2760,17 @@ type QrReviveVerifyContact struct {
 	Fingerprint string `json:"fingerprint"`
 	// Invite number.
 	Invitenumber string `json:"invitenumber"`
-	Kind         string `json:"kind"`
 }
 
 func (*QrReviveVerifyContact) isQrVariant()    {}
 func (*QrReviveVerifyContact) GetKind() string { return "reviveVerifyContact" }
+func (v *QrReviveVerifyContact) MarshalJSON() ([]byte, error) {
+	type alias QrReviveVerifyContact
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "reviveVerifyContact", alias: alias(*v)})
+}
 
 // Ask the user if they want to revive their own group invite QR code.
 type QrReviveVerifyGroup struct {
@@ -2240,11 +2786,17 @@ type QrReviveVerifyGroup struct {
 	Grpname string `json:"grpname"`
 	// Invite number.
 	Invitenumber string `json:"invitenumber"`
-	Kind         string `json:"kind"`
 }
 
 func (*QrReviveVerifyGroup) isQrVariant()    {}
 func (*QrReviveVerifyGroup) GetKind() string { return "reviveVerifyGroup" }
+func (v *QrReviveVerifyGroup) MarshalJSON() ([]byte, error) {
+	type alias QrReviveVerifyGroup
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "reviveVerifyGroup", alias: alias(*v)})
+}
 
 // Ask the user if they want to revive their own broadcast channel invite QR code.
 type QrReviveJoinBroadcast struct {
@@ -2258,24 +2810,36 @@ type QrReviveJoinBroadcast struct {
 	Grpid string `json:"grpid"`
 	// Invite number.
 	Invitenumber string `json:"invitenumber"`
-	Kind         string `json:"kind"`
 	// Broadcast name.
 	Name string `json:"name"`
 }
 
 func (*QrReviveJoinBroadcast) isQrVariant()    {}
 func (*QrReviveJoinBroadcast) GetKind() string { return "reviveJoinBroadcast" }
+func (v *QrReviveJoinBroadcast) MarshalJSON() ([]byte, error) {
+	type alias QrReviveJoinBroadcast
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "reviveJoinBroadcast", alias: alias(*v)})
+}
 
 // `dclogin:` scheme parameters.
 //
 // Ask the user if they want to login with the email address.
 type QrLogin struct {
 	Address string `json:"address"`
-	Kind    string `json:"kind"`
 }
 
 func (*QrLogin) isQrVariant()    {}
 func (*QrLogin) GetKind() string { return "login" }
+func (v *QrLogin) MarshalJSON() ([]byte, error) {
+	type alias QrLogin
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "login", alias: alias(*v)})
+}
 
 func unmarshalQr(data json.RawMessage, out *Qr) error {
 	var header struct {
