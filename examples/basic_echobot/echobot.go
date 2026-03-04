@@ -8,18 +8,6 @@ import (
 	"github.com/chatmail/rpc-client-go/v2/deltachat"
 )
 
-// Get the first available account or create a new one if none exists.
-func getAccount(rpc *deltachat.Rpc) uint32 {
-	accounts, _ := rpc.GetAllAccountIds()
-	var accId uint32
-	if len(accounts) == 0 {
-		accId, _ = rpc.AddAccount()
-	} else {
-		accId = accounts[0]
-	}
-	return accId
-}
-
 func logEvent(bot *deltachat.Bot, accId uint32, event deltachat.EventType) {
 	switch ev := event.(type) {
 	case *deltachat.EventTypeInfo:
@@ -31,9 +19,25 @@ func logEvent(bot *deltachat.Bot, accId uint32, event deltachat.EventType) {
 	}
 }
 
-func runEchoBot(bot *deltachat.Bot, accId uint32) {
-	sysinfo, _ := bot.Rpc.GetSystemInfo()
+func main() {
+	trans := deltachat.NewIOTransport()
+	if err := trans.Open(); err != nil {
+		log.Fatalln(err)
+	}
+	defer trans.Close()
+	rpc := &deltachat.Rpc{Context: context.Background(), Transport: trans}
+
+	sysinfo, _ := rpc.GetSystemInfo()
 	log.Println("Running deltachat core", sysinfo["deltachat_core_version"])
+
+	bot := deltachat.NewBot(rpc)
+	accounts, _ := rpc.GetAllAccountIds()
+	var accId uint32
+	if len(accounts) == 0 {
+		accId, _ = rpc.AddAccount()
+	} else {
+		accId = accounts[0]
+	}
 
 	bot.On(&deltachat.EventTypeInfo{}, logEvent)
 	bot.On(&deltachat.EventTypeWarning{}, logEvent)
@@ -64,14 +68,4 @@ func runEchoBot(bot *deltachat.Bot, accId uint32) {
 	if err := bot.Run(); err != nil {
 		log.Fatalln(err)
 	}
-}
-
-func main() {
-	trans := deltachat.NewIOTransport()
-	if err := trans.Open(); err != nil {
-		log.Fatalln(err)
-	}
-	defer trans.Close()
-	rpc := &deltachat.Rpc{Context: context.Background(), Transport: trans}
-	runEchoBot(deltachat.NewBot(rpc), getAccount(rpc))
 }

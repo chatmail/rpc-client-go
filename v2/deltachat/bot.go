@@ -4,12 +4,10 @@ import (
 	"context"
 	"fmt"
 	"sync"
-
-	"github.com/chatmail/rpc-client-go/deltachat/option"
 )
 
-type EventHandler func(bot *Bot, accId AccountId, event Event)
-type NewMsgHandler func(bot *Bot, accId AccountId, msgId MsgId)
+type EventHandler func(bot *Bot, accId uint32, event EventType)
+type NewMsgHandler func(bot *Bot, accId uint32, msgId uint32)
 
 // BotRunningErr is returned by Bot.Run() if the Bot is already running
 type BotRunningErr struct{}
@@ -23,7 +21,7 @@ type Bot struct {
 	Rpc              *Rpc
 	newMsgHandler    NewMsgHandler
 	onUnhandledEvent EventHandler
-	handlerMap       map[eventType]EventHandler
+	handlerMap       map[string]EventHandler
 	handlerMapMutex  sync.RWMutex
 	ctxMutex         sync.Mutex
 	ctx              context.Context
@@ -32,14 +30,14 @@ type Bot struct {
 
 // Create a new Bot that will process events for all created accounts.
 func NewBot(rpc *Rpc) *Bot {
-	return &Bot{Rpc: rpc, handlerMap: make(map[eventType]EventHandler)}
+	return &Bot{Rpc: rpc, handlerMap: make(map[string]EventHandler)}
 }
 
 // Set an EventHandler for the given event type. Calling On() several times
 // with the same event type will override the previously set EventHandler.
-func (bot *Bot) On(event Event, handler EventHandler) {
+func (bot *Bot) On(event EventType, handler EventHandler) {
 	bot.handlerMapMutex.Lock()
-	bot.handlerMap[event.eventType()] = handler
+	bot.handlerMap[event.GetKind()] = handler
 	bot.handlerMapMutex.Unlock()
 }
 
@@ -50,42 +48,15 @@ func (bot *Bot) OnUnhandledEvent(handler EventHandler) {
 }
 
 // Remove EventHandler for the given event type.
-func (bot *Bot) RemoveEventHandler(event Event) {
+func (bot *Bot) RemoveEventHandler(event EventType) {
 	bot.handlerMapMutex.Lock()
-	delete(bot.handlerMap, event.eventType())
+	delete(bot.handlerMap, event.GetKind())
 	bot.handlerMapMutex.Unlock()
 }
 
 // Set the NewMsgHandler for this bot.
 func (bot *Bot) OnNewMsg(handler NewMsgHandler) {
 	bot.newMsgHandler = handler
-}
-
-// Configure one of the bot's accounts.
-func (bot *Bot) Configure(accId AccountId, addr string, password string) error {
-	err := bot.Rpc.BatchSetConfig(
-		accId,
-		map[string]option.Option[string]{
-			"bot":     option.Some("1"),
-			"addr":    option.Some(addr),
-			"mail_pw": option.Some(password),
-		},
-	)
-	if err != nil {
-		return err
-	}
-	return bot.Rpc.Configure(accId)
-}
-
-// Set UI-specific configuration value in the given account.
-// This is useful for custom 3rd party settings set by bot programs.
-func (bot *Bot) SetUiConfig(accId AccountId, key string, value option.Option[string]) error {
-	return bot.Rpc.SetConfig(accId, "ui."+key, value)
-}
-
-// Get custom UI-specific configuration value set with SetUiConfig().
-func (bot *Bot) GetUiConfig(accId AccountId, key string) (option.Option[string], error) {
-	return bot.Rpc.GetConfig(accId, "ui."+key)
 }
 
 // Process events until Stop() is called. If the bot is already running, BotRunningErr is returned.
@@ -106,22 +77,16 @@ func (bot *Bot) Run() error {
 		}
 	}
 
-	eventChan := make(chan struct {
-		AccountId AccountId
-		Event     Event
-	})
+	eventChan := make(chan Event)
 	go func() {
 		for {
 			rpc := &Rpc{Context: bot.ctx, Transport: bot.Rpc.Transport}
-			accId, event, err := rpc.GetNextEvent()
+			event, err := rpc.GetNextEvent()
 			if err != nil {
 				close(eventChan)
 				break
 			}
-			eventChan <- struct {
-				AccountId AccountId
-				Event     Event
-			}{accId, event}
+			eventChan <- event
 		}
 	}()
 
@@ -131,9 +96,9 @@ func (bot *Bot) Run() error {
 			bot.Stop()
 			return nil
 		}
-		bot.onEvent(evData.AccountId, evData.Event)
-		if evData.Event.eventType() == eventTypeIncomingMsg {
-			bot.processMessages(evData.AccountId)
+		bot.onEvent(evData.ContextId, evData.Event)
+		if _, ok := evData.Event.(*EventTypeIncomingMsg); ok {
+			bot.processMessages(evData.ContextId)
 		}
 	}
 }
@@ -154,9 +119,9 @@ func (bot *Bot) Stop() {
 	}
 }
 
-func (bot *Bot) onEvent(accId AccountId, event Event) {
+func (bot *Bot) onEvent(accId uint32, event EventType) {
 	bot.handlerMapMutex.RLock()
-	handler, ok := bot.handlerMap[event.eventType()]
+	handler, ok := bot.handlerMap[event.GetKind()]
 	bot.handlerMapMutex.RUnlock()
 	if ok {
 		handler(bot, accId, event)
@@ -165,13 +130,14 @@ func (bot *Bot) onEvent(accId AccountId, event Event) {
 	}
 }
 
-func (bot *Bot) processMessages(accId AccountId) {
+func (bot *Bot) processMessages(accId uint32) {
 	msgIds, err := bot.Rpc.GetNextMsgs(accId)
 	if err != nil {
 		return
 	}
 	for _, msgId := range msgIds {
-		bot.Rpc.SetConfig(accId, "last_msg_id", option.Some(fmt.Sprintf("%v", msgId))) //nolint:errcheck
+		lastMsgId := fmt.Sprintf("%v", msgId)
+		bot.Rpc.SetConfig(accId, "last_msg_id", &lastMsgId) //nolint:errcheck
 		if bot.newMsgHandler != nil {
 			bot.newMsgHandler(bot, accId, msgId)
 		}

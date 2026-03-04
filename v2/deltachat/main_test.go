@@ -13,3 +13,5 @@ func TestMain(m *testing.M) {
 	defer acfactory.TearDown()
 	m.Run()
 }
+
+func strptr(s string) *string { return &s }

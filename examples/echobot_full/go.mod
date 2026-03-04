@@ -1,9 +1,9 @@
-module echobot
+module executable
 
 go 1.25
 
 require (
-	github.com/chatmail/rpc-client-go v1.2.14
+	github.com/chatmail/rpc-client-go/v2 v2.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.8.2
 )
 
@@ -15,6 +15,3 @@ require (
 	golang.org/x/sync v0.6.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// this is needed only for tests, don't add it in your project's go.mod
-replace github.com/chatmail/rpc-client-go => ../../

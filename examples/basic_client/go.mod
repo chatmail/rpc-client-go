@@ -1,10 +1,8 @@
-module echobot
+module executable
 
 go 1.25.1
 
-replace github.com/chatmail/rpc-client-go => ../../
-
-require github.com/chatmail/rpc-client-go v0.0.0-00010101000000-000000000000
+require github.com/chatmail/rpc-client-go/v2 v2.0.0-00010101000000-000000000000
 
 require (
 	github.com/creachadair/jrpc2 v1.1.2 // indirect

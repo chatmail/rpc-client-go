@@ -1,4 +1,4 @@
-module github.com/chatmail/rpc-client-go
+module github.com/chatmail/rpc-client-go/v2
 
 go 1.25
 

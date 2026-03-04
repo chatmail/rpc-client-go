@@ -11,7 +11,7 @@ Chatmail client & bot API for Golang.
 ## Install
 
 ```sh
-go get -u github.com/chatmail/rpc-client-go
+go get -u github.com/chatmail/rpc-client-go/v2
 ```
 
 ### Installing deltachat-rpc-server
@@ -20,6 +20,13 @@ This package depends on a standalone Chatmail RPC server
 `deltachat-rpc-server` program that must be available in your
 `PATH`. For installation instructions check:
 https://github.com/chatmail/core/tree/main/deltachat-rpc-server
+
+## Developing bots faster ⚡
+
+**NOTE:** If you want to develop bots, you should probably use this
+library together with [deltabot-cli-go][deltabotcli], it takes
+away the repetitive process of creating the bot CLI and let you
+focus on writing your message processing logic.
 
 ## Usage
 
@@ -37,7 +44,6 @@ import (
 	"os"
 
 	"github.com/chatmail/rpc-client-go/deltachat"
-	"github.com/chatmail/rpc-client-go/deltachat/option"
 	"github.com/chatmail/rpc-client-go/deltachat/transport"
 )
 
@@ -99,13 +105,6 @@ go run ./echobot.go dcaccount:nine.testrun.org
 Check the [examples folder](./examples)
 for more examples.
 
-## Developing bots faster ⚡
-
-If what you want is to develop bots, you probably should use this
-library together with [deltabot-cli-go][deltabotcli], it takes
-away the repetitive process of creating the bot CLI and let you
-focus on writing your message processing logic.
-
 ## Testing your code
 
 `deltachat.AcFactory` is provided to help users of this library
@@ -123,7 +122,7 @@ $ docker run -it --rm -p 3025:25 -p 3110:110 -p 3143:143 -p 3465:465 -p 3993:993
 
 ### Using AcFactory
 
-After setting up the fake email server, create a file called `main_test.go` inside your tests folder,
+Create a file called `main_test.go` inside your tests folder,
 and save it with the following content:
 
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=./examples/echobot_full/main_test.go) -->
@@ -173,47 +172,6 @@ func TestEchoBot(t *testing.T) {
 		})
 	})
 }
-```
-<!-- MARKDOWN-AUTO-DOCS:END -->
-
-### GitHub action
-
-To run the tests in a GitHub action with the fake mail server service:
-
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=./examples/echobot_full/.github/workflows/ci.yml) -->
-<!-- The below code snippet is automatically added from ./examples/echobot_full/.github/workflows/ci.yml -->
-```yml
-name: Test
-
-on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
-
-      - name: Run tests
-        run: |
-          go test -v
-
-    services:
-      mail_server:
-        image: ghcr.io/deltachat/mail-server-tester:release
-        ports:
-          - 3025:25
-          - 3143:143
-          - 3465:465
-          - 3993:993
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
