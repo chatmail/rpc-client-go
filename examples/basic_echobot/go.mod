@@ -2,7 +2,7 @@ module executable
 
 go 1.25.1
 
-require github.com/chatmail/rpc-client-go/v2 v2.0.0-00010101000000-000000000000
+require github.com/chatmail/rpc-client-go/v2 v2.0.0-20260304025217-028a14d10739
 
 require (
 	github.com/creachadair/jrpc2 v1.1.2 // indirect

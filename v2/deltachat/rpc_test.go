@@ -20,10 +20,8 @@ func TestRpc_CheckEmailValidity(t *testing.T) {
 
 func TestRpc_MiscSetDraft_and_MiscSendDraft(t *testing.T) {
 	t.Parallel()
-	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		chatId, err := rpc.CreateGroupChat(accId, "test group", true)
-		require.Nil(t, err)
-		err = rpc.MiscSetDraft(accId, chatId, strptr("test"), nil, nil, nil, nil)
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		err := rpc.MiscSetDraft(accId, chatId, strptr("test"), nil, nil, nil, nil)
 		require.Nil(t, err)
 		_, err = rpc.MiscSendDraft(accId, chatId)
 		require.Nil(t, err)
@@ -32,9 +30,7 @@ func TestRpc_MiscSetDraft_and_MiscSendDraft(t *testing.T) {
 
 func TestRpc_SetChatVisibility(t *testing.T) {
 	t.Parallel()
-	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		chatId, err := rpc.CreateGroupChat(accId, "test group", true)
-		require.Nil(t, err)
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
 		require.Nil(t, rpc.SetChatVisibility(accId, chatId, ChatVisibilityPinned))
 		require.Nil(t, rpc.SetChatVisibility(accId, chatId, ChatVisibilityArchived))
 		require.Nil(t, rpc.SetChatVisibility(accId, chatId, ChatVisibilityNormal))
@@ -183,7 +179,8 @@ func TestAccount_Contacts(t *testing.T) {
 func TestAccount_GetContactByAddr(t *testing.T) {
 	t.Parallel()
 	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		contactId, err := rpc.CreateContact(accId, "null@localhost", strptr("test"))
+		addr := "user@example.com"
+		contactId, err := rpc.CreateContact(accId, addr, strptr("test"))
 		require.Nil(t, err)
 		require.NotNil(t, contactId)
 
@@ -191,7 +188,7 @@ func TestAccount_GetContactByAddr(t *testing.T) {
 		require.Nil(t, err)
 		require.Nil(t, contactId2)
 
-		contactId2, err = rpc.LookupContactIdByAddr(accId, "null@localhost")
+		contactId2, err = rpc.LookupContactIdByAddr(accId, addr)
 		require.Nil(t, err)
 		require.NotNil(t, contactId2)
 		require.Equal(t, contactId, *contactId2)
@@ -201,7 +198,7 @@ func TestAccount_GetContactByAddr(t *testing.T) {
 func TestAccount_BlockedContacts(t *testing.T) {
 	t.Parallel()
 	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		contactId, err := rpc.CreateContact(accId, "null@localhost", strptr("test"))
+		contactId, err := rpc.CreateContact(accId, "user@example.com", strptr("test"))
 		require.Nil(t, err)
 
 		blocked, err := rpc.GetBlockedContacts(accId)
@@ -378,10 +375,8 @@ func TestAccount_GetNextMsgs(t *testing.T) {
 
 func TestAccount_DeleteMsgs(t *testing.T) {
 	t.Parallel()
-	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		chatId, err := rpc.CreateGroupChat(accId, "test group", true)
-		require.Nil(t, err)
-		_, err = rpc.MiscSendTextMessage(accId, chatId, "hi")
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		_, err := rpc.MiscSendTextMessage(accId, chatId, "hi")
 		require.Nil(t, err)
 
 		msgs, err := rpc.GetMessageIds(accId, chatId, false, false)
@@ -398,9 +393,7 @@ func TestAccount_DeleteMsgs(t *testing.T) {
 
 func TestAccount_SearchMessages(t *testing.T) {
 	t.Parallel()
-	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		chatId, err := rpc.CreateGroupChat(accId, "test group", true)
-		require.Nil(t, err)
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
 		msgId, err := rpc.MiscSendTextMessage(accId, chatId, "hi")
 		require.Nil(t, err)
 
@@ -413,10 +406,7 @@ func TestAccount_SearchMessages(t *testing.T) {
 
 func TestAccount_GetChatlistEntries(t *testing.T) {
 	t.Parallel()
-	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		_, err := rpc.CreateGroupChat(accId, "test group", true)
-		require.Nil(t, err)
-
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
 		entries, err := rpc.GetChatlistEntries(accId, nil, strptr("unknown"), nil)
 		require.Nil(t, err)
 		require.Empty(t, entries)
@@ -444,12 +434,10 @@ func TestAccount_AddDeviceMsg(t *testing.T) {
 
 func TestChat_Basics(t *testing.T) {
 	t.Parallel()
-	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		chatId, err := rpc.CreateGroupChat(accId, "test group", true)
-		require.Nil(t, err)
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
 		require.Nil(t, rpc.AcceptChat(accId, chatId))
 		require.Nil(t, rpc.MarknoticedChat(accId, chatId))
-		_, err = rpc.GetFirstUnreadMessageOfChat(accId, chatId)
+		_, err := rpc.GetFirstUnreadMessageOfChat(accId, chatId)
 		require.Nil(t, err)
 
 		_, err = rpc.GetBasicChatInfo(accId, chatId)
@@ -468,14 +456,12 @@ func TestChat_Basics(t *testing.T) {
 
 func TestChat_Groups(t *testing.T) {
 	t.Parallel()
-	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		chatId, err := rpc.CreateGroupChat(accId, "test group", false)
-		require.Nil(t, err)
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
 		require.Nil(t, rpc.SetChatProfileImage(accId, chatId, acfactory.TestImage()))
 		require.Nil(t, rpc.SetChatProfileImage(accId, chatId, nil))
 		require.Nil(t, rpc.SetChatName(accId, chatId, "new name"))
 
-		_, err = rpc.GetChatContacts(accId, chatId)
+		_, err := rpc.GetChatContacts(accId, chatId)
 		require.Nil(t, err)
 
 		require.Nil(t, rpc.SetChatEphemeralTimer(accId, chatId, 9000))
@@ -490,12 +476,8 @@ func TestChat_Groups(t *testing.T) {
 
 func TestMsg_Reactions(t *testing.T) {
 	t.Parallel()
-	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		chatId, err := rpc.CreateGroupChat(accId, "test group", false)
-		require.Nil(t, err)
-
-		var msgId uint32
-		msgId, err = rpc.SendMsg(accId, chatId, MessageData{Text: strptr("test message")})
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.SendMsg(accId, chatId, MessageData{Text: strptr("test message")})
 		require.Nil(t, err)
 
 		_, err = rpc.SendReaction(accId, msgId, []string{":)"})
@@ -512,5 +494,585 @@ func TestMsg_Reactions(t *testing.T) {
 		reactions = msg.Reactions.Reactions
 		require.Len(t, reactions, 1)
 		require.Equal(t, reactions[0].Emoji, ":)")
+	})
+}
+
+func TestRpc_GetSystemInfo(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRpc(func(rpc *Rpc) {
+		info, err := rpc.GetSystemInfo()
+		require.Nil(t, err)
+		require.NotEmpty(t, info)
+	})
+}
+
+func TestAccount_GetAllAccountIds(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRpc(func(rpc *Rpc) {
+		ids, err := rpc.GetAllAccountIds()
+		require.Nil(t, err)
+		require.Empty(t, ids)
+
+		accId, err := rpc.AddAccount()
+		require.Nil(t, err)
+
+		ids, err = rpc.GetAllAccountIds()
+		require.Nil(t, err)
+		require.Contains(t, ids, accId)
+	})
+}
+
+func TestAccount_GetSelectedAccountId(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRpc(func(rpc *Rpc) {
+		accId, err := rpc.AddAccount()
+		require.Nil(t, err)
+		require.Nil(t, rpc.SelectAccount(accId))
+
+		selected, err := rpc.GetSelectedAccountId()
+		require.Nil(t, err)
+		require.NotNil(t, selected)
+		require.Equal(t, accId, *selected)
+	})
+}
+
+func TestAccount_GetAllAccounts(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRpc(func(rpc *Rpc) {
+		_, err := rpc.AddAccount()
+		require.Nil(t, err)
+
+		accounts, err := rpc.GetAllAccounts()
+		require.Nil(t, err)
+		require.NotEmpty(t, accounts)
+	})
+}
+
+func TestAccount_GetAccountInfo(t *testing.T) {
+	t.Parallel()
+	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
+		info, err := rpc.GetAccountInfo(accId)
+		require.Nil(t, err)
+		require.NotNil(t, info)
+		require.Equal(t, (&AccountUnconfigured{}).GetKind(), info.GetKind())
+	})
+}
+
+func TestAccount_StartStopIoForAllAccounts(t *testing.T) {
+	t.Parallel()
+	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
+		require.Nil(t, rpc.StartIoForAllAccounts())
+		require.Nil(t, rpc.StopIoForAllAccounts())
+	})
+}
+
+func TestAccount_GetBlobDir(t *testing.T) {
+	t.Parallel()
+	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
+		blobDir, err := rpc.GetBlobDir(accId)
+		require.Nil(t, err)
+		require.NotNil(t, blobDir)
+	})
+}
+
+func TestAccount_GetStorageUsageReportString(t *testing.T) {
+	t.Parallel()
+	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
+		report, err := rpc.GetStorageUsageReportString(accId)
+		require.Nil(t, err)
+		require.NotEmpty(t, report)
+	})
+}
+
+func TestAccount_GetMigrationError(t *testing.T) {
+	t.Parallel()
+	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
+		migErr, err := rpc.GetMigrationError(accId)
+		require.Nil(t, err)
+		require.Nil(t, migErr)
+	})
+}
+
+func TestAccount_BatchGetConfig(t *testing.T) {
+	t.Parallel()
+	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
+		require.Nil(t, rpc.SetConfig(accId, "displayname", strptr("Alice")))
+
+		cfg, err := rpc.BatchGetConfig(accId, []string{"displayname", "selfstatus"})
+		require.Nil(t, err)
+		require.NotNil(t, cfg["displayname"])
+		require.Equal(t, "Alice", *cfg["displayname"])
+	})
+}
+
+func TestAccount_GetAllUiConfigKeys(t *testing.T) {
+	t.Parallel()
+	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
+		keys, err := rpc.GetAllUiConfigKeys(accId)
+		require.Nil(t, err)
+		require.NotNil(t, keys)
+	})
+}
+
+func TestAccount_SetAccountsOrder(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRpc(func(rpc *Rpc) {
+		acc1, err := rpc.AddAccount()
+		require.Nil(t, err)
+		acc2, err := rpc.AddAccount()
+		require.Nil(t, err)
+
+		require.Nil(t, rpc.SetAccountsOrder([]uint32{acc2, acc1}))
+
+		ids, err := rpc.GetAllAccountIds()
+		require.Nil(t, err)
+		require.Equal(t, []uint32{acc2, acc1}, ids)
+	})
+}
+
+func TestAccount_EstimateAutoDeletionCount(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		count, err := rpc.EstimateAutoDeletionCount(accId, false, 3600)
+		require.Nil(t, err)
+		require.Equal(t, uint(0), count)
+	})
+}
+
+func TestAccount_MaybeNetwork(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRpc(func(rpc *Rpc) {
+		require.Nil(t, rpc.MaybeNetwork())
+	})
+}
+
+func TestAccount_GetProviderInfo(t *testing.T) {
+	t.Parallel()
+	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
+		info, err := rpc.GetProviderInfo(accId, "user@gmail.com")
+		require.Nil(t, err)
+		require.NotNil(t, info)
+	})
+}
+
+func TestContact_GetContact(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		addr := "test@example.com"
+		contactId, err := rpc.CreateContact(accId, addr, strptr("Test User"))
+		require.Nil(t, err)
+
+		contact, err := rpc.GetContact(accId, contactId)
+		require.Nil(t, err)
+		require.Equal(t, addr, contact.Address)
+	})
+}
+
+func TestContact_GetContacts(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		_, err := rpc.CreateContact(accId, "alice@example.com", strptr("Alice"))
+		require.Nil(t, err)
+
+		contacts, err := rpc.GetContacts(accId, ContactFlagAddress, nil)
+		require.Nil(t, err)
+		require.NotEmpty(t, contacts)
+
+		contacts, err = rpc.GetContacts(accId, 0, nil)
+		require.Nil(t, err)
+		require.Empty(t, contacts)
+	})
+}
+
+func TestContact_GetContactsByIds(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		contactId, err := rpc.CreateContact(accId, "bob@example.com", strptr("Bob"))
+		require.Nil(t, err)
+
+		contacts, err := rpc.GetContactsByIds(accId, []uint32{contactId})
+		require.Nil(t, err)
+		require.NotEmpty(t, contacts)
+	})
+}
+
+func TestContact_DeleteContact(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		contactId, err := rpc.CreateContact(accId, "delete@example.com", nil)
+		require.Nil(t, err)
+		require.Nil(t, rpc.DeleteContact(accId, contactId))
+	})
+}
+
+func TestContact_UnblockContact(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		contactId, err := rpc.CreateContact(accId, "block@example.com", nil)
+		require.Nil(t, err)
+		require.Nil(t, rpc.BlockContact(accId, contactId))
+		require.Nil(t, rpc.UnblockContact(accId, contactId))
+
+		blocked, err := rpc.GetBlockedContacts(accId)
+		require.Nil(t, err)
+		require.Empty(t, blocked)
+	})
+}
+
+func TestContact_ChangeContactName(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		contactId, err := rpc.CreateContact(accId, "rename@example.com", strptr("OldName"))
+		require.Nil(t, err)
+		require.Nil(t, rpc.ChangeContactName(accId, contactId, "NewName"))
+
+		contact, err := rpc.GetContact(accId, contactId)
+		require.Nil(t, err)
+		require.Equal(t, "NewName", contact.Name)
+	})
+}
+
+func TestContact_GetContactEncryptionInfo(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		acfactory.WithOnlineAccount(func(rpc2 *Rpc, accId2 uint32) {
+			contactId := acfactory.ImportContact(rpc, accId, rpc2, accId2)
+			info, err := rpc.GetContactEncryptionInfo(accId, contactId)
+			require.Nil(t, err)
+			require.NotEmpty(t, info)
+		})
+	})
+}
+
+func TestChat_Description(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		require.Nil(t, rpc.SetChatDescription(accId, chatId, "A test description"))
+
+		desc, err := rpc.GetChatDescription(accId, chatId)
+		require.Nil(t, err)
+		require.Equal(t, "A test description", desc)
+	})
+}
+
+func TestChat_MuteDuration(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		muted, err := rpc.IsChatMuted(accId, chatId)
+		require.Nil(t, err)
+		require.False(t, muted)
+
+		require.Nil(t, rpc.SetChatMuteDuration(accId, chatId, &MuteDurationForever{}))
+
+		muted, err = rpc.IsChatMuted(accId, chatId)
+		require.Nil(t, err)
+		require.True(t, muted)
+
+		require.Nil(t, rpc.SetChatMuteDuration(accId, chatId, &MuteDurationNotMuted{}))
+
+		muted, err = rpc.IsChatMuted(accId, chatId)
+		require.Nil(t, err)
+		require.False(t, muted)
+	})
+}
+
+func TestChat_GetChatEphemeralTimer(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		timer, err := rpc.GetChatEphemeralTimer(accId, chatId)
+		require.Nil(t, err)
+		require.Equal(t, uint32(0), timer)
+
+		require.Nil(t, rpc.SetChatEphemeralTimer(accId, chatId, 300))
+
+		timer, err = rpc.GetChatEphemeralTimer(accId, chatId)
+		require.Nil(t, err)
+		require.Equal(t, uint32(300), timer)
+	})
+}
+
+func TestChat_MarknoticedAllChats(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		require.Nil(t, rpc.MarknoticedAllChats(accId))
+	})
+}
+
+func TestChat_GetSimilarChatIds(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		ids, err := rpc.GetSimilarChatIds(accId, chatId)
+		require.Nil(t, err)
+		require.NotNil(t, ids)
+	})
+}
+
+func TestChat_CreateGroupChatUnencrypted(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		chatId, err := rpc.CreateGroupChatUnencrypted(accId, "unencrypted group")
+		require.Nil(t, err)
+		require.NotEqual(t, uint32(0), chatId)
+	})
+}
+
+func TestChat_CanSend(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		canSend, err := rpc.CanSend(accId, chatId)
+		require.Nil(t, err)
+		require.True(t, canSend)
+	})
+}
+
+func TestChat_AddRemoveContactFromChat(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		acfactory.WithOnlineAccount(func(rpc2 *Rpc, accId2 uint32) {
+			contactId := acfactory.ImportContact(rpc, accId, rpc2, accId2)
+
+			require.Nil(t, rpc.AddContactToChat(accId, chatId, contactId))
+
+			contacts, err := rpc.GetChatContacts(accId, chatId)
+			require.Nil(t, err)
+			require.Contains(t, contacts, contactId)
+
+			require.Nil(t, rpc.RemoveContactFromChat(accId, chatId, contactId))
+
+			contacts, err = rpc.GetChatContacts(accId, chatId)
+			require.Nil(t, err)
+			require.NotContains(t, contacts, contactId)
+		})
+	})
+}
+
+func TestChat_GetPastChatContacts(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		acfactory.WithOnlineAccount(func(rpc2 *Rpc, accId2 uint32) {
+			contactId := acfactory.ImportContact(rpc, accId, rpc2, accId2)
+			require.Nil(t, rpc.AddContactToChat(accId, chatId, contactId))
+
+			// send message so group gets promoted and past chat contacts is set
+			_, err := rpc.SendMsg(accId, chatId, MessageData{Text: strptr("test")})
+			require.Nil(t, err)
+
+			require.Nil(t, rpc.RemoveContactFromChat(accId, chatId, contactId))
+			past, err := rpc.GetPastChatContacts(accId, chatId)
+			require.Nil(t, err)
+			require.Contains(t, past, contactId)
+		})
+	})
+}
+
+func TestMsg_GetDraftAndRemoveDraft(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		draft, err := rpc.GetDraft(accId, chatId)
+		require.Nil(t, err)
+		require.Nil(t, draft)
+
+		require.Nil(t, rpc.MiscSetDraft(accId, chatId, strptr("draft text"), nil, nil, nil, nil))
+
+		draft, err = rpc.GetDraft(accId, chatId)
+		require.Nil(t, err)
+		require.NotNil(t, draft)
+
+		require.Nil(t, rpc.RemoveDraft(accId, chatId))
+
+		draft, err = rpc.GetDraft(accId, chatId)
+		require.Nil(t, err)
+		require.Nil(t, draft)
+	})
+}
+
+func TestMsg_GetFreshMsgCnt(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		count, err := rpc.GetFreshMsgCnt(accId, chatId)
+		require.Nil(t, err)
+		require.Equal(t, uint(0), count)
+	})
+}
+
+func TestMsg_GetMessages(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.MiscSendTextMessage(accId, chatId, "test message")
+		require.Nil(t, err)
+
+		msgs, err := rpc.GetMessages(accId, []uint32{msgId})
+		require.Nil(t, err)
+		require.NotEmpty(t, msgs)
+	})
+}
+
+func TestMsg_GetMessageInfo(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.MiscSendTextMessage(accId, chatId, "test message")
+		require.Nil(t, err)
+
+		info, err := rpc.GetMessageInfo(accId, msgId)
+		require.Nil(t, err)
+		require.NotEmpty(t, info)
+
+		infoObj, err := rpc.GetMessageInfoObject(accId, msgId)
+		require.Nil(t, err)
+		require.NotNil(t, infoObj)
+	})
+}
+
+func TestMsg_GetMessageListItems(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		_, err := rpc.MiscSendTextMessage(accId, chatId, "test message")
+		require.Nil(t, err)
+
+		items, err := rpc.GetMessageListItems(accId, chatId, false, false)
+		require.Nil(t, err)
+		require.NotEmpty(t, items)
+	})
+}
+
+func TestMsg_GetExistingMsgIds(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.MiscSendTextMessage(accId, chatId, "test message")
+		require.Nil(t, err)
+
+		ids, err := rpc.GetExistingMsgIds(accId, []uint32{msgId, 99999})
+		require.Nil(t, err)
+		require.Contains(t, ids, msgId)
+		require.NotContains(t, ids, uint32(99999))
+	})
+}
+
+func TestMsg_GetMessageHtml(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.SendMsg(accId, chatId, MessageData{Html: strptr("test")})
+		require.Nil(t, err)
+
+		html, err := rpc.GetMessageHtml(accId, msgId)
+		require.Nil(t, err)
+		require.NotNil(t, html)
+		require.Equal(t, "test", *html)
+	})
+}
+
+func TestMsg_GetMessageNotificationInfo(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.MiscSendTextMessage(accId, chatId, "notification test")
+		require.Nil(t, err)
+
+		info, err := rpc.GetMessageNotificationInfo(accId, msgId)
+		require.Nil(t, err)
+		require.NotNil(t, info)
+	})
+}
+
+func TestMsg_MiscSendMsg(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		result, err := rpc.MiscSendMsg(accId, chatId, strptr("misc send test"), nil, nil, nil, nil)
+		require.Nil(t, err)
+		require.NotEqual(t, uint32(0), result.First)
+		require.Equal(t, "misc send test", result.Second.Text)
+	})
+}
+
+func TestMsg_ForwardMessages(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		chatId2, err := rpc.CreateGroupChat(accId, "target group", false)
+		require.Nil(t, err)
+
+		msgId, err := rpc.MiscSendTextMessage(accId, chatId, "forward me")
+		require.Nil(t, err)
+
+		require.Nil(t, rpc.ForwardMessages(accId, []uint32{msgId}, chatId2))
+
+		ids, err := rpc.GetMessageIds(accId, chatId2, false, false)
+		require.Nil(t, err)
+		require.NotEmpty(t, ids)
+	})
+}
+
+func TestMsg_SendEditRequest(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.MiscSendTextMessage(accId, chatId, "original text")
+		require.Nil(t, err)
+
+		require.Nil(t, rpc.SendEditRequest(accId, msgId, "edited text"))
+	})
+}
+
+func TestMsg_MiscGetStickers(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		folder, err := rpc.MiscGetStickerFolder(accId)
+		require.Nil(t, err)
+		require.NotEmpty(t, folder)
+
+		stickers, err := rpc.MiscGetStickers(accId)
+		require.Nil(t, err)
+		require.NotNil(t, stickers)
+	})
+}
+
+func TestChat_CreateBroadcast(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		chatId, err := rpc.CreateBroadcast(accId, "test broadcast")
+		require.Nil(t, err)
+		require.NotEqual(t, uint32(0), chatId)
+	})
+}
+
+func TestMsg_Webxdc(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		webxdcPath := acfactory.TestWebxdc()
+		msgId, err := rpc.SendMsg(accId, chatId, MessageData{File: &webxdcPath})
+		require.Nil(t, err)
+
+		info, err := rpc.GetWebxdcInfo(accId, msgId)
+		require.Nil(t, err)
+		require.Equal(t, "TestApp", info.Name)
+
+		updates, err := rpc.GetWebxdcStatusUpdates(accId, msgId, 0)
+		require.Nil(t, err)
+		require.NotEmpty(t, updates)
+
+		require.Nil(t, rpc.SendWebxdcStatusUpdate(accId, msgId, `{"payload":"test"}`, nil))
+	})
+}
+
+func TestRpc_Sleep(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRpc(func(rpc *Rpc) {
+		require.Nil(t, rpc.Sleep(0))
+	})
+}
+
+func TestAccount_GetPushState(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		state, err := rpc.GetPushState(accId)
+		require.Nil(t, err)
+		require.NotEmpty(t, string(state))
+	})
+}
+
+func TestChat_LeaveGroup(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		_, err := rpc.MiscSendTextMessage(accId, chatId, "promote group")
+		require.Nil(t, err)
+
+		require.Nil(t, rpc.LeaveGroup(accId, chatId))
 	})
 }
