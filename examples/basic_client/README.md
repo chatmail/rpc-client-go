@@ -3,5 +3,5 @@
 A basic client boilerplate implementation, to run:
 
 ```sh
-go run . DCACCOUNT:https://nine.testrun.org/new
+go run . dcaccount:nine.testrun.org
 ```
