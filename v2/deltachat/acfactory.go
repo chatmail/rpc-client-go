@@ -38,7 +38,7 @@ type AcFactory struct {
 // Prepare the AcFactory.
 func (factory *AcFactory) TearUp() {
 	if factory.ConfigQr == "" {
-		factory.ConfigQr = "dcaccount:nine.testrun.org"
+		factory.ConfigQr = "dcaccount:ci-chatmail.testrun.org"
 	}
 	factory.startTime = time.Now().Unix()
 
@@ -105,6 +105,17 @@ func (factory *AcFactory) WithOnlineAccount(callback func(*Rpc, uint32)) {
 			panic(err)
 		}
 		callback(rpc, accId)
+	})
+}
+
+// Get a new account configured and with I/O already started and a test (unpromoted) group chat created.
+func (factory *AcFactory) WithGroup(callback func(*Rpc, uint32, uint32)) {
+	factory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		chatId, err := rpc.CreateGroupChat(accId, "test group", false)
+		if err != nil {
+			panic(err)
+		}
+		callback(rpc, accId, chatId)
 	})
 }
 
@@ -182,8 +193,8 @@ func (factory *AcFactory) IntroduceEachOther(rpc1 *Rpc, accId1 uint32, rpc2 *Rpc
 	}
 }
 
-// Create a 1:1 chat with accId2 in the chatlist of accId1.
-func (factory *AcFactory) CreateChat(rpc1 *Rpc, accId1 uint32, rpc2 *Rpc, accId2 uint32) uint32 {
+// Import contact of accId2 into accId1 and return the imported contact ID.
+func (factory *AcFactory) ImportContact(rpc1 *Rpc, accId1 uint32, rpc2 *Rpc, accId2 uint32) uint32 {
 	vcard, err := rpc2.MakeVcard(accId2, []uint32{ContactSelf})
 	if err != nil {
 		panic(err)
@@ -192,7 +203,14 @@ func (factory *AcFactory) CreateChat(rpc1 *Rpc, accId1 uint32, rpc2 *Rpc, accId2
 	if err != nil {
 		panic(err)
 	}
-	chatId, err := rpc1.CreateChatByContactId(accId1, ids[0])
+
+	return ids[0]
+}
+
+// Create a 1:1 chat with accId2 in the chatlist of accId1.
+func (factory *AcFactory) CreateChat(rpc1 *Rpc, accId1 uint32, rpc2 *Rpc, accId2 uint32) uint32 {
+	contacId := factory.ImportContact(rpc1, accId1, rpc2, accId2)
+	chatId, err := rpc1.CreateChatByContactId(accId1, contacId)
 	if err != nil {
 		panic(err)
 	}
@@ -254,11 +272,6 @@ func (factory *AcFactory) TestWebxdc() string {
 		if err != nil {
 			panic(err)
 		}
-	}
-
-	err = writer.Close()
-	if err != nil {
-		panic(err)
 	}
 
 	return path

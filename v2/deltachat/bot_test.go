@@ -2,6 +2,7 @@ package deltachat
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -11,6 +12,39 @@ func TestBot_NewBot(t *testing.T) {
 	acfactory.WithRpc(func(rpc *Rpc) {
 		bot := NewBot(rpc)
 		assert.NotNil(t, bot)
+	})
+}
+
+func TestBot_BotRunningErr(t *testing.T) {
+	t.Parallel()
+	err := &BotRunningErr{}
+	assert.NotEmpty(t, err.Error())
+}
+
+func TestBot_IsRunning(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineBot(func(bot *Bot, botAcc uint32) {
+		assert.False(t, bot.IsRunning())
+		done := make(chan error)
+		go func() {
+			done <- bot.Run()
+		}()
+		for !bot.IsRunning() {
+			select {
+			case err := <-done:
+				assert.Failf(t, "bot.Run() exited before bot started running", "%v", err)
+				return
+			case <-time.After(10 * time.Second):
+				assert.Fail(t, "timeout waiting for bot to start running")
+				return
+			default:
+				time.Sleep(10 * time.Millisecond)
+			}
+		}
+		assert.True(t, bot.IsRunning())
+		bot.Stop()
+		assert.Nil(t, <-done)
+		assert.False(t, bot.IsRunning())
 	})
 }
 
@@ -51,6 +85,30 @@ func TestBot_OnNewMsg(t *testing.T) {
 			assert.Nil(t, err)
 			msg := acfactory.NextMsg(accRpc, accId)
 			assert.Equal(t, "test2", msg.Text)
+		})
+	})
+}
+
+func TestBot_OnUnhandledEvent(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRunningBot(func(bot *Bot, botAcc uint32) {
+		acfactory.WithOnlineAccount(func(accRpc *Rpc, accId uint32) {
+			unhandled := make(chan EventType, 10)
+			bot.OnUnhandledEvent(func(bot *Bot, botAcc uint32, event EventType) {
+				unhandled <- event
+			})
+
+			chatWithBot := acfactory.CreateChat(accRpc, accId, bot.Rpc, botAcc)
+			_, err := accRpc.MiscSendTextMessage(accId, chatWithBot, "unhandled test")
+			assert.Nil(t, err)
+
+			// Wait for at least one unhandled event to arrive, but avoid hanging indefinitely.
+			select {
+			case <-unhandled:
+				// received expected unhandled event
+			case <-time.After(10 * time.Second):
+				t.Fatalf("timeout waiting for unhandled event")
+			}
 		})
 	})
 }
