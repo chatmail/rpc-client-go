@@ -146,8 +146,7 @@ func TestAccount_SetConfig(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, "new name", *name)
 
-		img := acfactory.TestImage()
-		require.Nil(t, rpc.SetConfig(accId, "selfavatar", &img))
+		require.Nil(t, rpc.SetConfig(accId, "selfavatar", strptr(acfactory.TestImage())))
 	})
 }
 
@@ -460,8 +459,7 @@ func TestChat_Basics(t *testing.T) {
 func TestChat_Groups(t *testing.T) {
 	t.Parallel()
 	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
-		img := acfactory.TestImage()
-		require.Nil(t, rpc.SetChatProfileImage(accId, chatId, &img))
+		require.Nil(t, rpc.SetChatProfileImage(accId, chatId, strptr(acfactory.TestImage())))
 		require.Nil(t, rpc.SetChatProfileImage(accId, chatId, nil))
 		require.Nil(t, rpc.SetChatName(accId, chatId, "new name"))
 
@@ -1264,8 +1262,7 @@ func TestRpc_DownloadFullMessage(t *testing.T) {
 	acfactory.WithOnlineAccount(func(rpc1 *Rpc, accId1 uint32) {
 		acfactory.WithOnlineAccount(func(rpc2 *Rpc, accId2 uint32) {
 			// Set a tiny download limit so that attachment are not auto-downloaded
-			downloadLimit := "1"
-			require.Nil(t, rpc1.SetConfig(accId1, "download_limit", &downloadLimit))
+			require.Nil(t, rpc1.SetConfig(accId1, "download_limit", strptr("1")))
 
 			chatId := acfactory.CreateChat(rpc2, accId2, rpc1, accId1)
 			file := acfactory.TestFile("test.txt", 500*1024) // if not big enough a pre-message will not be sent
@@ -1345,8 +1342,7 @@ func TestRpc_SetDraftVcard(t *testing.T) {
 func TestRpc_GetChatMedia(t *testing.T) {
 	t.Parallel()
 	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
-		img := acfactory.TestImage()
-		msgId, err := rpc.SendMsg(accId, chatId, MessageData{File: &img})
+		msgId, err := rpc.SendMsg(accId, chatId, MessageData{File: strptr(acfactory.TestImage())})
 		require.Nil(t, err)
 
 		msgs, err := rpc.GetChatMedia(accId, &chatId, ViewtypeImage, nil, nil)
@@ -1370,8 +1366,7 @@ func TestRpc_SendWebxdcRealtimeDataAndAdvertisement(t *testing.T) {
 	acfactory.WithOnlineAccount(func(rpc1 *Rpc, accId1 uint32) {
 		acfactory.WithOnlineAccount(func(rpc2 *Rpc, accId2 uint32) {
 			chatId := acfactory.CreateChat(rpc1, accId1, rpc2, accId2)
-			xdcPath := acfactory.TestWebxdc()
-			msgId, err := rpc1.SendMsg(accId1, chatId, MessageData{File: &xdcPath})
+			msgId, err := rpc1.SendMsg(accId1, chatId, MessageData{File: strptr(acfactory.TestWebxdc())})
 			require.Nil(t, err)
 
 			require.Nil(t, rpc1.SendWebxdcRealtimeAdvertisement(accId1, msgId))
@@ -1384,8 +1379,7 @@ func TestRpc_SendWebxdcRealtimeDataAndAdvertisement(t *testing.T) {
 func TestRpc_GetWebxdcHrefAndBlob(t *testing.T) {
 	t.Parallel()
 	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
-		xdcPath := acfactory.TestWebxdc()
-		msgId, err := rpc.SendMsg(accId, chatId, MessageData{File: &xdcPath})
+		msgId, err := rpc.SendMsg(accId, chatId, MessageData{File: strptr(acfactory.TestWebxdc())})
 		require.Nil(t, err)
 
 		// this is supposed to be used on info-messages, not normal messages
@@ -1400,8 +1394,7 @@ func TestRpc_GetWebxdcHrefAndBlob(t *testing.T) {
 func TestRpc_SetAndInitWebxdcIntegration(t *testing.T) {
 	t.Parallel()
 	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
-		xdcPath := acfactory.TestWebxdc()
-		require.Nil(t, rpc.SetWebxdcIntegration(accId, xdcPath))
+		require.Nil(t, rpc.SetWebxdcIntegration(accId, acfactory.TestWebxdc()))
 		_, err := rpc.InitWebxdcIntegration(accId, &chatId)
 		require.Nil(t, err)
 	})
@@ -1456,8 +1449,7 @@ func TestRpc_SendSticker(t *testing.T) {
 func TestRpc_SaveMsgFile(t *testing.T) {
 	t.Parallel()
 	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
-		img := acfactory.TestImage()
-		msgId, err := rpc.SendMsg(accId, chatId, MessageData{File: &img})
+		msgId, err := rpc.SendMsg(accId, chatId, MessageData{File: strptr(acfactory.TestImage())})
 		require.Nil(t, err)
 		destPath := filepath.Join(acfactory.MkdirTemp(), "saved.jpg")
 		require.Nil(t, rpc.SaveMsgFile(accId, msgId, destPath))
