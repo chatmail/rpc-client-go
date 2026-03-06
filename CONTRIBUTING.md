@@ -13,14 +13,9 @@ $ ./scripts/run_tests.sh
 
 The `run_tests.sh` script will install `deltachat-rpc-server` (if needed) and run all tests.
 
-To run all `Account` tests:
+To run a single test, for example `TestRpc_SetChatVisibility`:
 
 ```
-go test -v ./... -run TestAccount
-```
-
-To run a single test, for example `TestChat_SetName`:
-
-```
-go test -v ./... -run TestChat_SetName
+cd v2/
+go test -v ./... -run TestRpc_SetChatVisibility
 ```
