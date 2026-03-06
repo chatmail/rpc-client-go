@@ -8,18 +8,6 @@ import (
 	"github.com/chatmail/rpc-client-go/v2/deltachat"
 )
 
-// Get the first available account or create a new one if none exists.
-func getAccount(rpc *deltachat.Rpc) uint32 {
-	accounts, _ := rpc.GetAllAccountIds()
-	var accId uint32
-	if len(accounts) == 0 {
-		accId, _ = rpc.AddAccount()
-	} else {
-		accId = accounts[0]
-	}
-	return accId
-}
-
 func logEvent(bot *deltachat.Bot, accId uint32, event deltachat.EventType) {
 	switch ev := event.(type) {
 	case *deltachat.EventTypeInfo:
@@ -64,6 +52,18 @@ func runEchoBot(bot *deltachat.Bot, accId uint32) {
 	if err := bot.Run(); err != nil {
 		log.Fatalln(err)
 	}
+}
+
+// Get the first available account or create a new one if none exists.
+func getAccount(rpc *deltachat.Rpc) uint32 {
+	accounts, _ := rpc.GetAllAccountIds()
+	var accId uint32
+	if len(accounts) == 0 {
+		accId, _ = rpc.AddAccount()
+	} else {
+		accId = accounts[0]
+	}
+	return accId
 }
 
 func main() {
