@@ -23,7 +23,7 @@ https://github.com/chatmail/core/tree/main/deltachat-rpc-server
 
 ## Developing bots faster ⚡
 
-**NOTE:** If you want to develop bots, you should probably use this
+If you want to develop bots, you should probably use this
 library together with [deltabot-cli-go][deltabotcli], it takes
 away the repetitive process of creating the bot CLI and let you
 focus on writing your message processing logic.
