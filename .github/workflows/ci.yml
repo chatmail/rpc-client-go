@@ -23,7 +23,6 @@ jobs:
       - name: Test
         run: |
           export TEST_DEBUG=1
-          export TEST_EXTRA_TAGS=" "
           bash ./scripts/run_tests.sh
 
       - name: Coverage Badge - Generate
