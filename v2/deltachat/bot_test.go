@@ -1,50 +1,49 @@
 package deltachat
 
 import (
+	"errors"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBot_NewBot(t *testing.T) {
 	t.Parallel()
 	acfactory.WithRpc(func(rpc *Rpc) {
 		bot := NewBot(rpc)
-		assert.NotNil(t, bot)
+		require.NotNil(t, bot)
 	})
 }
 
 func TestBot_BotRunningErr(t *testing.T) {
 	t.Parallel()
 	err := &BotRunningErr{}
-	assert.NotEmpty(t, err.Error())
+	require.NotEmpty(t, err.Error())
 }
 
 func TestBot_IsRunning(t *testing.T) {
 	t.Parallel()
 	acfactory.WithOnlineBot(func(bot *Bot, botAcc uint32) {
-		assert.False(t, bot.IsRunning())
+		require.False(t, bot.IsRunning())
 		done := make(chan error)
-		go func() {
-			done <- bot.Run()
-		}()
+		go func() { done <- bot.Run() }()
 		for !bot.IsRunning() {
 			select {
 			case err := <-done:
-				assert.Failf(t, "bot.Run() exited before bot started running", "%v", err)
+				require.Failf(t, "bot.Run() exited before bot started running", "%v", err)
 				return
 			case <-time.After(10 * time.Second):
-				assert.Fail(t, "timeout waiting for bot to start running")
+				require.Fail(t, "timeout waiting for bot to start running")
 				return
 			default:
 				time.Sleep(10 * time.Millisecond)
 			}
 		}
-		assert.True(t, bot.IsRunning())
+		require.True(t, bot.IsRunning())
 		bot.Stop()
-		assert.Nil(t, <-done)
-		assert.False(t, bot.IsRunning())
+		require.Nil(t, <-done)
+		require.False(t, bot.IsRunning())
 	})
 }
 
@@ -61,9 +60,9 @@ func TestBot_On(t *testing.T) {
 
 			chatWithBot := acfactory.CreateChat(accRpc, accId, bot.Rpc, botAcc)
 			_, err := accRpc.MiscSendTextMessage(accId, chatWithBot, "test1")
-			assert.Nil(t, err)
+			require.Nil(t, err)
 			msg := <-incomingMsg
-			assert.Equal(t, "test1", msg.Text)
+			require.Equal(t, "test1", msg.Text)
 			bot.RemoveEventHandler(&EventTypeIncomingMsg{})
 			close(incomingMsg)
 		})
@@ -77,14 +76,14 @@ func TestBot_OnNewMsg(t *testing.T) {
 			bot.OnNewMsg(func(bot *Bot, botAcc uint32, msgId uint32) {
 				snapshot, _ := bot.Rpc.GetMessage(botAcc, msgId)
 				_, err := bot.Rpc.MiscSendTextMessage(botAcc, snapshot.ChatId, snapshot.Text)
-				assert.Nil(t, err)
+				require.Nil(t, err)
 			})
 
 			chatWithBot := acfactory.CreateChat(accRpc, accId, bot.Rpc, botAcc)
 			_, err := accRpc.MiscSendTextMessage(accId, chatWithBot, "test2")
-			assert.Nil(t, err)
+			require.Nil(t, err)
 			msg := acfactory.NextMsg(accRpc, accId)
-			assert.Equal(t, "test2", msg.Text)
+			require.Equal(t, "test2", msg.Text)
 		})
 	})
 }
@@ -100,7 +99,7 @@ func TestBot_OnUnhandledEvent(t *testing.T) {
 
 			chatWithBot := acfactory.CreateChat(accRpc, accId, bot.Rpc, botAcc)
 			_, err := accRpc.MiscSendTextMessage(accId, chatWithBot, "unhandled test")
-			assert.Nil(t, err)
+			require.Nil(t, err)
 
 			// Wait for at least one unhandled event to arrive, but avoid hanging indefinitely.
 			select {
@@ -129,17 +128,41 @@ func TestBot_Stop(t *testing.T) {
 		go func() {
 			done <- bot.Run()
 		}()
-		assert.Nil(t, <-done)
+		require.Nil(t, <-done)
 
 		go func() {
 			done <- bot.Run()
 		}()
-		assert.Nil(t, <-done)
+		require.Nil(t, <-done)
 
 		bot.On(&EventTypeInfo{}, func(bot *Bot, botAcc uint32, event EventType) { bot.Rpc.Transport.(*IOTransport).Close() })
 		go func() {
 			done <- bot.Run()
 		}()
-		assert.Nil(t, <-done)
+		require.Nil(t, <-done)
+	})
+}
+
+func TestBot_RunAlreadyRunning(t *testing.T) {
+	t.Parallel()
+	acfactory.WithUnconfiguredBot(func(bot *Bot, botAcc uint32) {
+		done := make(chan error, 1)
+		go func() { done <- bot.Run() }()
+		// Wait until bot is running.
+		for !bot.IsRunning() {
+			select {
+			case err := <-done:
+				require.Failf(t, "bot.Run() exited before bot started running", "%v", err)
+				return
+			default:
+				time.Sleep(5 * time.Millisecond)
+			}
+		}
+		// Now calling Run() again should return BotRunningErr
+		err := bot.Run()
+		require.NotNil(t, err)
+		require.True(t, errors.As(err, new(*BotRunningErr)))
+		bot.Stop()
+		require.Nil(t, <-done)
 	})
 }

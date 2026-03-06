@@ -1,11 +1,13 @@
 package deltachat
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/creachadair/jrpc2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -144,7 +146,8 @@ func TestAccount_SetConfig(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, "new name", *name)
 
-		require.Nil(t, rpc.SetConfig(accId, "selfavatar", acfactory.TestImage()))
+		img := acfactory.TestImage()
+		require.Nil(t, rpc.SetConfig(accId, "selfavatar", &img))
 	})
 }
 
@@ -457,7 +460,8 @@ func TestChat_Basics(t *testing.T) {
 func TestChat_Groups(t *testing.T) {
 	t.Parallel()
 	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
-		require.Nil(t, rpc.SetChatProfileImage(accId, chatId, acfactory.TestImage()))
+		img := acfactory.TestImage()
+		require.Nil(t, rpc.SetChatProfileImage(accId, chatId, &img))
 		require.Nil(t, rpc.SetChatProfileImage(accId, chatId, nil))
 		require.Nil(t, rpc.SetChatName(accId, chatId, "new name"))
 
@@ -1074,5 +1078,397 @@ func TestChat_LeaveGroup(t *testing.T) {
 		require.Nil(t, err)
 
 		require.Nil(t, rpc.LeaveGroup(accId, chatId))
+	})
+}
+
+func TestRpc_GetNextEventBatch(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRpc(func(rpc *Rpc) {
+		// GetNextEventBatch blocks until an event arrives; use a short-lived context
+		// to exercise the code path without hanging indefinitely.
+		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		defer cancel()
+		timedRpc := &Rpc{Context: ctx, Transport: rpc.Transport}
+		_, _ = timedRpc.GetNextEventBatch() // ignore timeout error
+	})
+}
+
+func TestRpc_MigrateAccount(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRpc(func(rpc *Rpc) {
+		_, err := rpc.MigrateAccount("/nonexistent/path/to.db")
+		require.NotNil(t, err)
+	})
+}
+
+func TestRpc_BackgroundFetch(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRpc(func(rpc *Rpc) {
+		require.Nil(t, rpc.BackgroundFetch(0))
+	})
+}
+
+func TestRpc_StopBackgroundFetch(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRpc(func(rpc *Rpc) {
+		require.Nil(t, rpc.StopBackgroundFetch())
+	})
+}
+
+func TestRpc_CopyToBlobDir(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		dest, err := rpc.CopyToBlobDir(accId, acfactory.TestFile("test.txt", 1))
+		require.Nil(t, err)
+		require.NotEmpty(t, dest)
+	})
+}
+
+func TestRpc_CheckQr(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		qr, err := rpc.CheckQr(accId, "https://example.com")
+		require.Nil(t, err)
+		require.NotNil(t, qr)
+	})
+}
+
+func TestRpc_SetStockStrings(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRpc(func(rpc *Rpc) {
+		require.Nil(t, rpc.SetStockStrings(map[string]string{}))
+	})
+}
+
+func TestRpc_AddOrUpdateTransport(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		transports, err := rpc.ListTransports(accId)
+		require.Nil(t, err)
+		require.NotEmpty(t, transports)
+		require.Nil(t, rpc.AddOrUpdateTransport(accId, transports[0]))
+	})
+}
+
+func TestRpc_AddTransport(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		transports, err := rpc.ListTransports(accId)
+		require.Nil(t, err)
+		require.NotEmpty(t, transports)
+		require.Nil(t, rpc.AddTransport(accId, transports[0]))
+	})
+}
+
+func TestRpc_ListTransports(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		transports, err := rpc.ListTransports(accId)
+		require.Nil(t, err)
+		require.NotEmpty(t, transports)
+	})
+}
+
+func TestRpc_DeleteTransport(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		// First add a second transport, you can't have zero transports
+		if err := rpc.AddTransportFromQr(accId, acfactory.ConfigQr); err != nil {
+			panic(err)
+		}
+		transports, err := rpc.ListTransports(accId)
+		require.Nil(t, err)
+		require.Equal(t, 2, len(transports))
+		addr := transports[1].Addr
+		require.Nil(t, rpc.DeleteTransport(accId, addr))
+		transports, err = rpc.ListTransports(accId)
+		require.Nil(t, err)
+		require.Equal(t, 1, len(transports))
+	})
+}
+
+func TestRpc_StopOngoingProcess(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		require.Nil(t, rpc.StopOngoingProcess(accId))
+	})
+}
+
+func TestRpc_ExportAndImportSelfKeys(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		dir := acfactory.MkdirTemp()
+		require.Nil(t, rpc.ExportSelfKeys(accId, dir, nil))
+		// FIXME: this shouldn't throw error, see https://github.com/chatmail/core/issues/7960
+		require.NotNil(t, rpc.ImportSelfKeys(accId, dir, nil))
+	})
+}
+
+func TestRpc_WaitNextMsgs(t *testing.T) {
+	t.Parallel()
+	acfactory.WithRunningBot(func(bot *Bot, botAcc uint32) {
+		acfactory.WithOnlineAccount(func(accRpc *Rpc, accId uint32) {
+			chatWithBot := acfactory.CreateChat(accRpc, accId, bot.Rpc, botAcc)
+			_, err := accRpc.MiscSendTextMessage(accId, chatWithBot, "test")
+			require.Nil(t, err)
+
+			msgs, err := bot.Rpc.WaitNextMsgs(botAcc)
+			require.Nil(t, err)
+			require.NotNil(t, msgs)
+		})
+	})
+}
+
+func TestRpc_SecureJoinWithUxInfo(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc1 *Rpc, accId1 uint32) {
+		acfactory.WithOnlineAccount(func(rpc2 *Rpc, accId2 uint32) {
+			qrdata, err := rpc1.GetChatSecurejoinQrCode(accId1, nil)
+			require.Nil(t, err)
+
+			_, err = rpc2.SecureJoinWithUxInfo(accId2, qrdata, nil, nil)
+			require.Nil(t, err)
+			acfactory.WaitForEvent(rpc1, accId1, &EventTypeSecurejoinInviterProgress{})
+			acfactory.WaitForEvent(rpc2, accId2, &EventTypeSecurejoinJoinerProgress{})
+		})
+	})
+}
+
+func TestRpc_DeleteMessagesForAll(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.MiscSendTextMessage(accId, chatId, "test")
+		require.Nil(t, err)
+		require.Nil(t, rpc.DeleteMessagesForAll(accId, []uint32{msgId}))
+	})
+}
+
+func TestRpc_GetMessageReadReceiptCountAndReceipts(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.MiscSendTextMessage(accId, chatId, "check read receipts")
+		require.Nil(t, err)
+
+		count, err := rpc.GetMessageReadReceiptCount(accId, msgId)
+		require.Nil(t, err)
+		require.Equal(t, uint(0), count)
+
+		receipts, err := rpc.GetMessageReadReceipts(accId, msgId)
+		require.Nil(t, err)
+		require.NotNil(t, receipts)
+	})
+}
+
+func TestRpc_DownloadFullMessage(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc1 *Rpc, accId1 uint32) {
+		acfactory.WithOnlineAccount(func(rpc2 *Rpc, accId2 uint32) {
+			// Set a tiny download limit so that attachment are not auto-downloaded
+			downloadLimit := "1"
+			require.Nil(t, rpc1.SetConfig(accId1, "download_limit", &downloadLimit))
+
+			chatId := acfactory.CreateChat(rpc2, accId2, rpc1, accId1)
+			file := acfactory.TestFile("test.txt", 500*1024) // if not big enough a pre-message will not be sent
+			_, err := rpc2.SendMsg(accId2, chatId, MessageData{File: &file})
+			require.Nil(t, err)
+
+			msg := acfactory.NextMsg(rpc1, accId1)
+			require.Nil(t, rpc1.DownloadFullMessage(accId1, msg.Id))
+		})
+	})
+}
+
+func TestRpc_MessageIdsToSearchResults(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.MiscSendTextMessage(accId, chatId, "searchable message")
+		require.Nil(t, err)
+		results, err := rpc.MessageIdsToSearchResults(accId, []uint32{msgId})
+		require.Nil(t, err)
+		require.NotNil(t, results)
+	})
+}
+
+func TestRpc_SaveMsgs(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.MiscSendTextMessage(accId, chatId, "save me")
+		require.Nil(t, err)
+		require.Nil(t, rpc.SaveMsgs(accId, []uint32{msgId}))
+	})
+}
+
+func TestRpc_ParseVcard(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		vcard, err := rpc.MakeVcard(accId, []uint32{ContactSelf})
+		require.Nil(t, err)
+
+		dir := acfactory.MkdirTemp()
+		path := filepath.Join(dir, "contact.vcf")
+		require.Nil(t, os.WriteFile(path, []byte(vcard), 0600))
+
+		contacts, err := rpc.ParseVcard(path)
+		require.Nil(t, err)
+		require.NotEmpty(t, contacts)
+	})
+}
+
+func TestRpc_ImportVcard(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc1 *Rpc, accId1 uint32) {
+		vcard, err := rpc1.MakeVcard(accId1, []uint32{ContactSelf})
+		require.Nil(t, err)
+
+		acfactory.WithOnlineAccount(func(rpc2 *Rpc, accId2 uint32) {
+			dir := acfactory.MkdirTemp()
+			path := filepath.Join(dir, "contact.vcf")
+			require.Nil(t, os.WriteFile(path, []byte(vcard), 0600))
+
+			ids, err := rpc2.ImportVcard(accId2, path)
+			require.Nil(t, err)
+			require.NotEmpty(t, ids)
+		})
+	})
+}
+
+func TestRpc_SetDraftVcard(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		// FIXME: this shouldn't throw error, see https://github.com/chatmail/core/issues/7960
+		err := rpc.SetDraftVcard(accId, chatId, []uint32{ContactSelf})
+		require.NotNil(t, err)
+		require.Equal(t, "Wrong viewtype for vCard: Text", err.(*jrpc2.Error).Message)
+	})
+}
+
+func TestRpc_GetChatMedia(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		img := acfactory.TestImage()
+		msgId, err := rpc.SendMsg(accId, chatId, MessageData{File: &img})
+		require.Nil(t, err)
+
+		msgs, err := rpc.GetChatMedia(accId, &chatId, ViewtypeImage, nil, nil)
+		require.Nil(t, err)
+		require.NotNil(t, msgs)
+		require.Contains(t, msgs, msgId)
+	})
+}
+
+func TestRpc_GetLocations(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		locs, err := rpc.GetLocations(accId, &chatId, nil, 0, 0)
+		require.Nil(t, err)
+		require.NotNil(t, locs)
+	})
+}
+
+func TestRpc_SendWebxdcRealtimeDataAndAdvertisement(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc1 *Rpc, accId1 uint32) {
+		acfactory.WithOnlineAccount(func(rpc2 *Rpc, accId2 uint32) {
+			chatId := acfactory.CreateChat(rpc1, accId1, rpc2, accId2)
+			xdcPath := acfactory.TestWebxdc()
+			msgId, err := rpc1.SendMsg(accId1, chatId, MessageData{File: &xdcPath})
+			require.Nil(t, err)
+
+			require.Nil(t, rpc1.SendWebxdcRealtimeAdvertisement(accId1, msgId))
+			require.Nil(t, rpc1.SendWebxdcRealtimeData(accId1, msgId, []int{1, 2, 3}))
+			require.Nil(t, rpc1.LeaveWebxdcRealtime(accId1, msgId))
+		})
+	})
+}
+
+func TestRpc_GetWebxdcHrefAndBlob(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		xdcPath := acfactory.TestWebxdc()
+		msgId, err := rpc.SendMsg(accId, chatId, MessageData{File: &xdcPath})
+		require.Nil(t, err)
+
+		// this is supposed to be used on info-messages, not normal messages
+		_, err = rpc.GetWebxdcHref(accId, msgId)
+		require.Nil(t, err)
+
+		_, err = rpc.GetWebxdcBlob(accId, msgId, "index.html")
+		require.Nil(t, err)
+	})
+}
+
+func TestRpc_SetAndInitWebxdcIntegration(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		xdcPath := acfactory.TestWebxdc()
+		require.Nil(t, rpc.SetWebxdcIntegration(accId, xdcPath))
+		_, err := rpc.InitWebxdcIntegration(accId, &chatId)
+		require.Nil(t, err)
+	})
+}
+
+func TestRpc_IceServers(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		_, err := rpc.IceServers(accId)
+		require.Nil(t, err)
+	})
+}
+
+func TestRpc_ForwardMessagesToAccount(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId1 uint32, chatId1 uint32) {
+		msgId, err := rpc.MiscSendTextMessage(accId1, chatId1, "to forward")
+		require.Nil(t, err)
+
+		// add a second profile
+		accId2, err := rpc.AddAccount()
+		require.Nil(t, err)
+		if err := rpc.AddTransportFromQr(accId2, acfactory.ConfigQr); err != nil {
+			panic(err)
+		}
+
+		// create a chat in second profile to forward messages into it
+		chatId2, err := rpc.CreateChatByContactId(accId2, ContactSelf)
+		require.Nil(t, err)
+
+		require.Nil(t, rpc.ForwardMessagesToAccount(accId1, []uint32{msgId}, accId2, chatId2))
+	})
+}
+
+func TestRpc_ResendMessages(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.MiscSendTextMessage(accId, chatId, "resend me")
+		require.Nil(t, err)
+		require.Nil(t, rpc.ResendMessages(accId, []uint32{msgId}))
+	})
+}
+
+func TestRpc_SendSticker(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		_, err := rpc.SendSticker(accId, chatId, acfactory.TestFile("test.webp", 1))
+		require.Nil(t, err)
+	})
+}
+
+func TestRpc_SaveMsgFile(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		img := acfactory.TestImage()
+		msgId, err := rpc.SendMsg(accId, chatId, MessageData{File: &img})
+		require.Nil(t, err)
+		destPath := filepath.Join(acfactory.MkdirTemp(), "saved.jpg")
+		require.Nil(t, rpc.SaveMsgFile(accId, msgId, destPath))
+	})
+}
+
+func TestRpc_MiscSaveSticker(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.SendSticker(accId, chatId, acfactory.TestFile("test.webp", 1))
+		require.Nil(t, err)
+		require.Nil(t, rpc.MiscSaveSticker(accId, msgId, "Saved"))
 	})
 }

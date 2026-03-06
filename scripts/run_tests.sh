@@ -61,5 +61,6 @@ done
 echo "Done testing examples"
 
 cd v2
-courtney -v -t="./..." ${TEST_EXTRA_TAGS:--t="-parallel=1"} -o coverage.out
+# add -t="-parallel=1" to avoid running tests in parallel
+courtney -v -t="./..." -o coverage.out
 go tool cover -func=coverage.out -o=../coverage-percent.out

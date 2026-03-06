@@ -3,6 +3,7 @@ package deltachat
 import (
 	"archive/zip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -145,11 +146,16 @@ func (factory *AcFactory) WithOnlineBot(callback func(*Bot, uint32)) {
 // It is ensured that Bot.IsRunning() is true for the returned bot.
 func (factory *AcFactory) WithRunningBot(callback func(*Bot, uint32)) {
 	factory.WithOnlineBot(func(bot *Bot, accId uint32) {
-		var err error
-		go func() { err = bot.Run() }()
+		done := make(chan error)
+		go func() { done <- bot.Run() }()
 		for !bot.IsRunning() {
-			if err != nil {
+			select {
+			case err := <-done:
 				panic(err)
+			case <-time.After(10 * time.Second):
+				panic("timeout waiting for bot.Run()")
+			default:
+				time.Sleep(10 * time.Millisecond)
 			}
 		}
 
@@ -219,7 +225,7 @@ func (factory *AcFactory) CreateChat(rpc1 *Rpc, accId1 uint32, rpc2 *Rpc, accId2
 }
 
 // Get a path to an image file that can be used for testing.
-func (factory *AcFactory) TestImage() *string {
+func (factory *AcFactory) TestImage() string {
 	var img *string
 	factory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
 		chatId, err := rpc.CreateChatByContactId(accId, ContactSelf)
@@ -232,7 +238,31 @@ func (factory *AcFactory) TestImage() *string {
 		}
 		img = chatData.ProfileImage
 	})
-	return img
+	return *img
+}
+
+// Get a path to a file with the provided filename and number of bytes that can be used for testing.
+func (factory *AcFactory) TestFile(filename string, bytesCount int) string {
+	factory.ensureTearUp()
+	dir := factory.MkdirTemp()
+	path := filepath.Join(dir, filename)
+
+	txtFile, err := os.Create(path)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := txtFile.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	_, err = txtFile.Write(make([]byte, bytesCount))
+	if err != nil {
+		panic(err)
+	}
+
+	return path
 }
 
 // Get a path to a Webxdc file that can be used for testing.
@@ -318,28 +348,15 @@ func (factory *AcFactory) ensureTearUp() {
 }
 
 func getChatId(event EventType) uint32 {
-	var chatId uint32
-	switch ev := event.(type) {
-	case *EventTypeMsgsChanged:
-		chatId = ev.ChatId
-	case *EventTypeReactionsChanged:
-		chatId = ev.ChatId
-	case *EventTypeIncomingMsg:
-		chatId = ev.ChatId
-	case *EventTypeMsgsNoticed:
-		chatId = ev.ChatId
-	case *EventTypeMsgDelivered:
-		chatId = ev.ChatId
-	case *EventTypeMsgFailed:
-		chatId = ev.ChatId
-	case *EventTypeMsgRead:
-		chatId = ev.ChatId
-	case *EventTypeMsgDeleted:
-		chatId = ev.ChatId
-	case *EventTypeChatModified:
-		chatId = ev.ChatId
-	case *EventTypeChatEphemeralTimerModified:
-		chatId = ev.ChatId
+	data, err := json.Marshal(event)
+	if err != nil {
+		return 0
 	}
-	return chatId
+	var ev struct {
+		ChatId uint32 `json:"chatId"`
+	}
+	if err := json.Unmarshal(data, &ev); err != nil {
+		return 0
+	}
+	return ev.ChatId
 }
