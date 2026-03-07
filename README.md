@@ -192,5 +192,4 @@ Check the complete example at [examples/echobot_full](./examples/echobot_full)
 
 Pull requests are welcome! check [CONTRIBUTING.md](./CONTRIBUTING.md)
 
-
 [deltabotcli]: https://github.com/deltachat-bot/deltabot-cli-go/
