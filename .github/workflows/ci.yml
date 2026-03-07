@@ -57,12 +57,3 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.head_ref }}
-
-    services:
-      mail_server:
-        image: ghcr.io/deltachat/mail-server-tester:release
-        ports:
-          - 3025:25
-          - 3143:143
-          - 3465:465
-          - 3993:993
