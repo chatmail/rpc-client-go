@@ -20,6 +20,15 @@ cd v2/
 go test -v ./... -run TestRpc_SetChatVisibility
 ```
 
+### Updating dependencies
+
+```
+cd v2
+go get -u ./...
+```
+
+To update the `deltachat-rpc-server` program in CI, update `scripts/run_tests.sh`
+
 ### Updating the auto-generated bindings
 
 To update the auto-generated RPC bindings code:
