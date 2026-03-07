@@ -3,3 +3,4 @@
 accounts
 examples/*/executable*
 examples/*/go.sum
+schema.json
