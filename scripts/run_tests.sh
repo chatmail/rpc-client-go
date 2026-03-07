@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 echo "Checking code with gofmt..."
 OUTPUT=`gofmt -d .`
@@ -24,12 +25,7 @@ then
     curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.4.0
 fi
 
-cd v2
-if ! golangci-lint run
-then
-    exit 1
-fi
-cd ..
+cd v2 && golangci-lint run && cd ..
 
 for i in examples/*
 do
@@ -37,18 +33,9 @@ do
     cd "$i"
     go mod edit -replace=github.com/chatmail/rpc-client-go/v2=../../v2
     go mod tidy
-    if ! golangci-lint run
-    then
-        exit 1
-    fi
-    if ! go build -v
-    then
-        exit 1
-    fi
-    if ! go test -v
-    then
-        exit 1
-    fi
+    golangci-lint run
+    go build -v
+    go test -v
     go mod edit -dropreplace github.com/chatmail/rpc-client-go/v2
     cd ../..
 done
