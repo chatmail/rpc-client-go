@@ -116,6 +116,8 @@ func TestBot_processMessages(t *testing.T) {
 	t.Parallel()
 	acfactory.WithRunningBot(func(bot *Bot, botAcc uint32) {
 		bot.processMessages(botAcc)
+		// Test the error path: use a non-existent account ID to trigger a GetNextMsgs error.
+		bot.processMessages(99999)
 	})
 }
 

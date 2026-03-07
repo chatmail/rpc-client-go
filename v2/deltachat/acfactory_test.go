@@ -32,7 +32,9 @@ func TestAcFactory_IntroduceEachOther(t *testing.T) {
 	t.Parallel()
 	acfactory.WithOnlineAccount(func(rpc1 *Rpc, accId1 uint32) {
 		acfactory.WithOnlineAccount(func(rpc2 *Rpc, accId2 uint32) {
-			acfactory.IntroduceEachOther(rpc1, accId1, rpc2, accId2)
+			chatId1, chatId2 := acfactory.IntroduceEachOther(rpc1, accId1, rpc2, accId2)
+			require.NotNil(t, chatId1)
+			require.NotNil(t, chatId2)
 		})
 	})
 }

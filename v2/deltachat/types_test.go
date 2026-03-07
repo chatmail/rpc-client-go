@@ -141,6 +141,9 @@ func TestUnmarshalChatListItemFetchResult(t *testing.T) {
 	t.Parallel()
 
 	var out ChatListItemFetchResult
+	require.Nil(t, unmarshalChatListItemFetchResult(json.RawMessage(`{"kind":"ChatListItem","id":1,"name":"test","color":"#fff","summaryStatus":0,"summaryText1":"","summaryText2":"","timestamp":0,"isProtected":false,"isContactRequest":false,"isSelfTalk":false,"isDeviceChat":false,"isMuted":false,"isArchived":false,"archived":false,"pinned":false,"wasSeenRecently":false}`), &out))
+	require.Equal(t, "ChatListItem", out.GetKind())
+
 	require.Nil(t, unmarshalChatListItemFetchResult(json.RawMessage(`{"kind":"ArchiveLink","freshMessageCounter":1}`), &out))
 	require.Equal(t, "ArchiveLink", out.GetKind())
 
@@ -209,7 +212,7 @@ func TestEventType_MarshalJSON(t *testing.T) {
 		&EventTypeMsgDeleted{ChatId: 1, MsgId: 2},
 		&EventTypeChatModified{ChatId: 1},
 		&EventTypeChatEphemeralTimerModified{ChatId: 1, Timer: 60},
-		&EventTypeChatDeleted{Chat_id: 1},
+		&EventTypeChatDeleted{ChatId: 1},
 		&EventTypeContactsChanged{},
 		&EventTypeLocationChanged{},
 		&EventTypeConfigureProgress{Progress: 500},
@@ -230,10 +233,10 @@ func TestEventType_MarshalJSON(t *testing.T) {
 		&EventTypeAccountsChanged{},
 		&EventTypeAccountsItemChanged{},
 		&EventTypeEventChannelOverflow{N: 5},
-		&EventTypeIncomingCall{Chat_id: 1, Msg_id: 2, Has_video: true},
-		&EventTypeIncomingCallAccepted{Chat_id: 1, Msg_id: 2},
-		&EventTypeOutgoingCallAccepted{Chat_id: 1, Msg_id: 2, Accept_call_info: "info"},
-		&EventTypeCallEnded{Chat_id: 1, Msg_id: 2},
+		&EventTypeIncomingCall{ChatId: 1, MsgId: 2, HasVideo: true},
+		&EventTypeIncomingCallAccepted{ChatId: 1, MsgId: 2},
+		&EventTypeOutgoingCallAccepted{ChatId: 1, MsgId: 2, AcceptCallInfo: "info"},
+		&EventTypeCallEnded{ChatId: 1, MsgId: 2},
 		&EventTypeTransportsModified{},
 	}
 
@@ -319,7 +322,7 @@ func TestUnmarshalEventType(t *testing.T) {
 func TestMessageListItem_MarshalJSON(t *testing.T) {
 	t.Parallel()
 
-	msg := &MessageListItemMessage{Msg_id: 42}
+	msg := &MessageListItemMessage{MsgId: 42}
 	data, err := json.Marshal(msg)
 	require.Nil(t, err)
 	require.Contains(t, string(data), `"kind":"message"`)
@@ -334,6 +337,9 @@ func TestUnmarshalMessageListItem(t *testing.T) {
 	t.Parallel()
 
 	var out MessageListItem
+	require.Nil(t, unmarshalMessageListItem(json.RawMessage(`{"kind":"message","msg_id":42}`), &out))
+	require.Equal(t, "message", out.GetKind())
+
 	require.Nil(t, unmarshalMessageListItem(json.RawMessage(`{"kind":"dayMarker","timestamp":1234}`), &out))
 	require.Equal(t, "dayMarker", out.GetKind())
 
@@ -359,6 +365,9 @@ func TestUnmarshalMessageLoadResult(t *testing.T) {
 	t.Parallel()
 
 	var out MessageLoadResult
+	require.Nil(t, unmarshalMessageLoadResult(json.RawMessage(`{"kind":"message","id":1,"chatId":0,"dimensionsHeight":0,"dimensionsWidth":0,"downloadState":"Done","duration":0,"fileBytes":0,"fromId":0,"hasDeviatingTimestamp":false,"hasHtml":false,"hasLocation":false,"isBot":false,"isEdited":false,"isForwarded":false,"isInfo":false,"isSetupmessage":false,"receivedTimestamp":0,"showPadlock":false,"sortTimestamp":0,"state":0,"subject":"","systemMessageType":"Unknown","text":"hi","timestamp":0,"viewType":"Text","sender":{"address":"","authName":"","color":"","id":0,"isBlocked":false,"isKeyContact":false,"isVerified":false,"lastSeen":0,"name":"","nameAndAddr":"","profileImage":null,"status":"","verifiedBy":0}}`), &out))
+	require.Equal(t, "message", out.GetKind())
+
 	require.Nil(t, unmarshalMessageLoadResult(json.RawMessage(`{"kind":"loadingError","error":"oops"}`), &out))
 	require.Equal(t, "loadingError", out.GetKind())
 
@@ -420,26 +429,26 @@ func TestQr_MarshalJSON(t *testing.T) {
 	t.Parallel()
 
 	qrs := []Qr{
-		&QrAskVerifyContact{Authcode: "abc", Contact_id: 1, Fingerprint: "fp", Invitenumber: "inv"},
-		&QrAskVerifyGroup{Authcode: "abc", Contact_id: 1, Fingerprint: "fp", Grpid: "grp", Grpname: "Group", Invitenumber: "inv"},
-		&QrAskJoinBroadcast{Authcode: "abc", Contact_id: 1, Fingerprint: "fp", Grpid: "grp", Invitenumber: "inv", Name: "channel"},
-		&QrFprOk{Contact_id: 1},
+		&QrAskVerifyContact{Authcode: "abc", ContactId: 1, Fingerprint: "fp", Invitenumber: "inv"},
+		&QrAskVerifyGroup{Authcode: "abc", ContactId: 1, Fingerprint: "fp", Grpid: "grp", Grpname: "Group", Invitenumber: "inv"},
+		&QrAskJoinBroadcast{Authcode: "abc", ContactId: 1, Fingerprint: "fp", Grpid: "grp", Invitenumber: "inv", Name: "channel"},
+		&QrFprOk{ContactId: 1},
 		&QrFprMismatch{},
 		&QrFprWithoutAddr{Fingerprint: "fp"},
 		&QrAccount{Domain: "example.com"},
-		&QrBackup2{Auth_token: "tok", Node_addr: "addr"},
+		&QrBackup2{AuthToken: "tok", NodeAddr: "addr"},
 		&QrBackupTooNew{},
-		&QrWebrtcInstance{Domain: "example.com", Instance_pattern: "pattern"},
+		&QrWebrtcInstance{Domain: "example.com", InstancePattern: "pattern"},
 		&QrProxy{Host: "proxy.example.com", Port: 8080, Url: "http://proxy.example.com:8080"},
-		&QrAddr{Contact_id: 1},
+		&QrAddr{ContactId: 1},
 		&QrUrl{Url: "https://example.com"},
 		&QrText{Text: "hello"},
-		&QrWithdrawVerifyContact{Authcode: "abc", Contact_id: 1, Fingerprint: "fp", Invitenumber: "inv"},
-		&QrWithdrawVerifyGroup{Authcode: "abc", Contact_id: 1, Fingerprint: "fp", Grpid: "grp", Grpname: "Group", Invitenumber: "inv"},
-		&QrWithdrawJoinBroadcast{Authcode: "abc", Contact_id: 1, Fingerprint: "fp", Grpid: "grp", Invitenumber: "inv", Name: "ch"},
-		&QrReviveVerifyContact{Authcode: "abc", Contact_id: 1, Fingerprint: "fp", Invitenumber: "inv"},
-		&QrReviveVerifyGroup{Authcode: "abc", Contact_id: 1, Fingerprint: "fp", Grpid: "grp", Grpname: "Group", Invitenumber: "inv"},
-		&QrReviveJoinBroadcast{Authcode: "abc", Contact_id: 1, Fingerprint: "fp", Grpid: "grp", Invitenumber: "inv", Name: "ch"},
+		&QrWithdrawVerifyContact{Authcode: "abc", ContactId: 1, Fingerprint: "fp", Invitenumber: "inv"},
+		&QrWithdrawVerifyGroup{Authcode: "abc", ContactId: 1, Fingerprint: "fp", Grpid: "grp", Grpname: "Group", Invitenumber: "inv"},
+		&QrWithdrawJoinBroadcast{Authcode: "abc", ContactId: 1, Fingerprint: "fp", Grpid: "grp", Invitenumber: "inv", Name: "ch"},
+		&QrReviveVerifyContact{Authcode: "abc", ContactId: 1, Fingerprint: "fp", Invitenumber: "inv"},
+		&QrReviveVerifyGroup{Authcode: "abc", ContactId: 1, Fingerprint: "fp", Grpid: "grp", Grpname: "Group", Invitenumber: "inv"},
+		&QrReviveJoinBroadcast{Authcode: "abc", ContactId: 1, Fingerprint: "fp", Grpid: "grp", Invitenumber: "inv", Name: "ch"},
 		&QrLogin{Address: "user@example.com"},
 	}
 
@@ -490,4 +499,123 @@ func TestUnmarshalQr(t *testing.T) {
 	var out Qr
 	require.NotNil(t, unmarshalQr(json.RawMessage(`notjson`), &out))
 	require.NotNil(t, unmarshalQr(json.RawMessage(`{"kind":"Unknown"}`), &out))
+}
+
+// TestVariantMarkerMethods ensures all private isXxxVariant() interface marker methods are exercised.
+func TestVariantMarkerMethods(t *testing.T) {
+	t.Parallel()
+
+	// Account variants
+	(&AccountConfigured{}).isAccountVariant()
+	(&AccountUnconfigured{}).isAccountVariant()
+
+	// CallState variants
+	(&CallStateAlerting{}).isCallStateVariant()
+	(&CallStateActive{}).isCallStateVariant()
+	(&CallStateCompleted{}).isCallStateVariant()
+	(&CallStateMissed{}).isCallStateVariant()
+	(&CallStateDeclined{}).isCallStateVariant()
+	(&CallStateCanceled{}).isCallStateVariant()
+
+	// ChatListItemFetchResult variants
+	(&ChatListItemFetchResultChatListItem{}).isChatListItemFetchResultVariant()
+	(&ChatListItemFetchResultArchiveLink{}).isChatListItemFetchResultVariant()
+	(&ChatListItemFetchResultError{}).isChatListItemFetchResultVariant()
+
+	// EphemeralTimer variants
+	(&EphemeralTimerDisabled{}).isEphemeralTimerVariant()
+	(&EphemeralTimerEnabled{}).isEphemeralTimerVariant()
+
+	// EventType variants
+	(&EventTypeInfo{}).isEventTypeVariant()
+	(&EventTypeSmtpConnected{}).isEventTypeVariant()
+	(&EventTypeImapConnected{}).isEventTypeVariant()
+	(&EventTypeSmtpMessageSent{}).isEventTypeVariant()
+	(&EventTypeImapMessageDeleted{}).isEventTypeVariant()
+	(&EventTypeImapMessageMoved{}).isEventTypeVariant()
+	(&EventTypeImapInboxIdle{}).isEventTypeVariant()
+	(&EventTypeNewBlobFile{}).isEventTypeVariant()
+	(&EventTypeDeletedBlobFile{}).isEventTypeVariant()
+	(&EventTypeWarning{}).isEventTypeVariant()
+	(&EventTypeError{}).isEventTypeVariant()
+	(&EventTypeErrorSelfNotInGroup{}).isEventTypeVariant()
+	(&EventTypeMsgsChanged{}).isEventTypeVariant()
+	(&EventTypeReactionsChanged{}).isEventTypeVariant()
+	(&EventTypeIncomingReaction{}).isEventTypeVariant()
+	(&EventTypeIncomingWebxdcNotify{}).isEventTypeVariant()
+	(&EventTypeIncomingMsg{}).isEventTypeVariant()
+	(&EventTypeIncomingMsgBunch{}).isEventTypeVariant()
+	(&EventTypeMsgsNoticed{}).isEventTypeVariant()
+	(&EventTypeMsgDelivered{}).isEventTypeVariant()
+	(&EventTypeMsgFailed{}).isEventTypeVariant()
+	(&EventTypeMsgRead{}).isEventTypeVariant()
+	(&EventTypeMsgDeleted{}).isEventTypeVariant()
+	(&EventTypeChatModified{}).isEventTypeVariant()
+	(&EventTypeChatEphemeralTimerModified{}).isEventTypeVariant()
+	(&EventTypeChatDeleted{}).isEventTypeVariant()
+	(&EventTypeContactsChanged{}).isEventTypeVariant()
+	(&EventTypeLocationChanged{}).isEventTypeVariant()
+	(&EventTypeConfigureProgress{}).isEventTypeVariant()
+	(&EventTypeImexProgress{}).isEventTypeVariant()
+	(&EventTypeImexFileWritten{}).isEventTypeVariant()
+	(&EventTypeSecurejoinInviterProgress{}).isEventTypeVariant()
+	(&EventTypeSecurejoinJoinerProgress{}).isEventTypeVariant()
+	(&EventTypeConnectivityChanged{}).isEventTypeVariant()
+	(&EventTypeSelfavatarChanged{}).isEventTypeVariant()
+	(&EventTypeConfigSynced{}).isEventTypeVariant()
+	(&EventTypeWebxdcStatusUpdate{}).isEventTypeVariant()
+	(&EventTypeWebxdcRealtimeData{}).isEventTypeVariant()
+	(&EventTypeWebxdcRealtimeAdvertisementReceived{}).isEventTypeVariant()
+	(&EventTypeWebxdcInstanceDeleted{}).isEventTypeVariant()
+	(&EventTypeAccountsBackgroundFetchDone{}).isEventTypeVariant()
+	(&EventTypeChatlistChanged{}).isEventTypeVariant()
+	(&EventTypeChatlistItemChanged{}).isEventTypeVariant()
+	(&EventTypeAccountsChanged{}).isEventTypeVariant()
+	(&EventTypeAccountsItemChanged{}).isEventTypeVariant()
+	(&EventTypeEventChannelOverflow{}).isEventTypeVariant()
+	(&EventTypeIncomingCall{}).isEventTypeVariant()
+	(&EventTypeIncomingCallAccepted{}).isEventTypeVariant()
+	(&EventTypeOutgoingCallAccepted{}).isEventTypeVariant()
+	(&EventTypeCallEnded{}).isEventTypeVariant()
+	(&EventTypeTransportsModified{}).isEventTypeVariant()
+
+	// MessageListItem variants
+	(&MessageListItemMessage{}).isMessageListItemVariant()
+	(&MessageListItemDayMarker{}).isMessageListItemVariant()
+
+	// MessageLoadResult variants
+	(&MessageLoadResultMessage{}).isMessageLoadResultVariant()
+	(&MessageLoadResultLoadingError{}).isMessageLoadResultVariant()
+
+	// MessageQuote variants
+	(&MessageQuoteJustText{}).isMessageQuoteVariant()
+	(&MessageQuoteWithMessage{}).isMessageQuoteVariant()
+
+	// MuteDuration variants
+	(&MuteDurationNotMuted{}).isMuteDurationVariant()
+	(&MuteDurationForever{}).isMuteDurationVariant()
+	(&MuteDurationUntil{}).isMuteDurationVariant()
+
+	// Qr variants
+	(&QrAskVerifyContact{}).isQrVariant()
+	(&QrAskVerifyGroup{}).isQrVariant()
+	(&QrAskJoinBroadcast{}).isQrVariant()
+	(&QrFprOk{}).isQrVariant()
+	(&QrFprMismatch{}).isQrVariant()
+	(&QrFprWithoutAddr{}).isQrVariant()
+	(&QrAccount{}).isQrVariant()
+	(&QrBackup2{}).isQrVariant()
+	(&QrBackupTooNew{}).isQrVariant()
+	(&QrWebrtcInstance{}).isQrVariant()
+	(&QrProxy{}).isQrVariant()
+	(&QrAddr{}).isQrVariant()
+	(&QrUrl{}).isQrVariant()
+	(&QrText{}).isQrVariant()
+	(&QrWithdrawVerifyContact{}).isQrVariant()
+	(&QrWithdrawVerifyGroup{}).isQrVariant()
+	(&QrWithdrawJoinBroadcast{}).isQrVariant()
+	(&QrReviveVerifyContact{}).isQrVariant()
+	(&QrReviveVerifyGroup{}).isQrVariant()
+	(&QrReviveJoinBroadcast{}).isQrVariant()
+	(&QrLogin{}).isQrVariant()
 }

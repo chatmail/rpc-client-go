@@ -174,7 +174,8 @@ func (factory *AcFactory) NextMsg(rpc *Rpc, accId uint32) Message {
 }
 
 // Introduce two accounts to each other creating a 1:1 chat between them.
-func (factory *AcFactory) IntroduceEachOther(rpc1 *Rpc, accId1 uint32, rpc2 *Rpc, accId2 uint32) {
+// The resulting 1:1 chatId  from each of the accounts is returned.
+func (factory *AcFactory) IntroduceEachOther(rpc1 *Rpc, accId1 uint32, rpc2 *Rpc, accId2 uint32) (uint32, uint32) {
 	qrdata, err := rpc1.GetChatSecurejoinQrCode(accId1, nil)
 	if err != nil {
 		panic(err)
@@ -184,9 +185,12 @@ func (factory *AcFactory) IntroduceEachOther(rpc1 *Rpc, accId1 uint32, rpc2 *Rpc
 		panic(err)
 	}
 
+	var chatId1, chatId2 uint32
+
 	for {
 		event := factory.WaitForEvent(rpc1, accId1, &EventTypeSecurejoinInviterProgress{}).(*EventTypeSecurejoinInviterProgress)
 		if event.Progress == 1000 {
+			chatId1 = event.ChatId
 			break
 		}
 	}
@@ -194,9 +198,16 @@ func (factory *AcFactory) IntroduceEachOther(rpc1 *Rpc, accId1 uint32, rpc2 *Rpc
 	for {
 		event := factory.WaitForEvent(rpc2, accId2, &EventTypeSecurejoinJoinerProgress{}).(*EventTypeSecurejoinJoinerProgress)
 		if event.Progress == 1000 {
+			var err error
+			chatId2, err = rpc2.CreateChatByContactId(accId2, event.ContactId)
+			if err != nil {
+				panic(err)
+			}
 			break
 		}
 	}
+
+	return chatId1, chatId2
 }
 
 // Import contact of accId2 into accId1 and return the imported contact ID.
@@ -336,7 +347,7 @@ func (factory *AcFactory) WaitForEvent(rpc *Rpc, accId uint32, event EventType) 
 			return ev.Event
 		}
 		if factory.Debug {
-			fmt.Printf("Waiting for event %v, got: %v\n", event.GetKind(), ev.Event.GetKind())
+			fmt.Printf("Waiting for event %v, got: %#v\n", event.GetKind(), ev.Event)
 		}
 	}
 }
