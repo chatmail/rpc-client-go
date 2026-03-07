@@ -31,12 +31,6 @@ then
 fi
 cd ..
 
-if ! command -v courtney &> /dev/null
-then
-    echo "courtney not found, installing..."
-    go install github.com/dave/courtney@master
-fi
-
 for i in examples/*
 do
     echo "Testing: $i"
@@ -61,6 +55,6 @@ done
 echo "Done testing examples"
 
 cd v2
-# add -t="-parallel=1" to avoid running tests in parallel
-courtney -v -t="./..." -o coverage.out
+# add -parallel=1 to avoid running tests in parallel
+go test -v ./... -coverprofile coverage.out
 go tool cover -func=coverage.out -o=../coverage-percent.out

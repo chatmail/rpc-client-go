@@ -1464,3 +1464,63 @@ func TestRpc_MiscSaveSticker(t *testing.T) {
 		require.Nil(t, rpc.MiscSaveSticker(accId, msgId, "Saved"))
 	})
 }
+
+func TestRpc_ContinueAutocryptKeyTransfer(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		// ContinueAutocryptKeyTransfer with a non-existent message ID returns an error,
+		// but the function itself is covered.
+		err := rpc.ContinueAutocryptKeyTransfer(accId, 99999, "invalid-setup-code")
+		require.NotNil(t, err)
+	})
+}
+
+func TestRpc_GetHttpResponse(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		resp, err := rpc.GetHttpResponse(accId, "https://delta.chat/robots.txt")
+		require.Nil(t, err)
+		require.NotEmpty(t, resp.Blob)
+	})
+}
+
+func TestRpc_Calls(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc1 *Rpc, accId1 uint32) {
+		acfactory.WithOnlineAccount(func(rpc2 *Rpc, accId2 uint32) {
+			// calls will not trigger for contact request, introduce each other
+			chatId1, _ := acfactory.IntroduceEachOther(rpc1, accId1, rpc2, accId2)
+
+			// start call
+			msgId1, err := rpc1.PlaceOutgoingCall(accId1, chatId1, "fake-data", false)
+			require.Nil(t, err)
+			info1, err := rpc1.CallInfo(accId1, msgId1)
+			require.Nil(t, err)
+			require.NotNil(t, "Alerting", info1.State.GetKind())
+
+			// wait for the incoming call on the other side
+			event2 := acfactory.WaitForEvent(rpc2, accId2, &EventTypeIncomingCall{}).(*EventTypeIncomingCall)
+			info2, err := rpc2.CallInfo(accId2, event2.MsgId)
+			require.Nil(t, err)
+			require.NotNil(t, "Alerting", info2.State.GetKind())
+
+			// accept incoming call
+			require.Nil(t, rpc2.AcceptIncomingCall(accId2, event2.MsgId, "fake-data"))
+			info2, err = rpc2.CallInfo(accId2, event2.MsgId)
+			require.Nil(t, err)
+			require.NotNil(t, "Active", info2.State.GetKind())
+
+			// wait for call response
+			require.NotNil(t, acfactory.WaitForEvent(rpc1, accId1, &EventTypeOutgoingCallAccepted{}).(*EventTypeOutgoingCallAccepted))
+			info1, err = rpc1.CallInfo(accId1, msgId1)
+			require.Nil(t, err)
+			require.NotNil(t, "Active", info1.State.GetKind())
+
+			// end call
+			require.Nil(t, rpc1.EndCall(accId1, msgId1))
+			info1, err = rpc1.CallInfo(accId1, msgId1)
+			require.Nil(t, err)
+			require.NotNil(t, "Completed", info1.State.GetKind())
+		})
+	})
+}

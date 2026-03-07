@@ -1,5 +1,5 @@
 *~
-coverage*.out
+*.out
 accounts
 examples/*/executable*
 examples/*/go.sum

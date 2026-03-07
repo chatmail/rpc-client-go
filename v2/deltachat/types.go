@@ -1051,7 +1051,7 @@ func (v *EventTypeChatEphemeralTimerModified) MarshalJSON() ([]byte, error) {
 // Chat deleted.
 type EventTypeChatDeleted struct {
 	// Chat ID.
-	Chat_id uint32 `json:"chat_id"`
+	ChatId uint32 `json:"chat_id"`
 }
 
 func (*EventTypeChatDeleted) isEventTypeVariant() {}
@@ -1405,13 +1405,13 @@ func (v *EventTypeEventChannelOverflow) MarshalJSON() ([]byte, error) {
 // Incoming call.
 type EventTypeIncomingCall struct {
 	// ID of the chat which the message belongs to.
-	Chat_id uint32 `json:"chat_id"`
+	ChatId uint32 `json:"chat_id"`
 	// True if incoming call is a video call.
-	Has_video bool `json:"has_video"`
+	HasVideo bool `json:"has_video"`
 	// ID of the info message referring to the call.
-	Msg_id uint32 `json:"msg_id"`
+	MsgId uint32 `json:"msg_id"`
 	// User-defined info as passed to place_outgoing_call()
-	Place_call_info string `json:"place_call_info"`
+	PlaceCallInfo string `json:"place_call_info"`
 }
 
 func (*EventTypeIncomingCall) isEventTypeVariant() {}
@@ -1427,9 +1427,9 @@ func (v *EventTypeIncomingCall) MarshalJSON() ([]byte, error) {
 // Incoming call accepted. This is esp. interesting to stop ringing on other devices.
 type EventTypeIncomingCallAccepted struct {
 	// ID of the chat which the message belongs to.
-	Chat_id uint32 `json:"chat_id"`
+	ChatId uint32 `json:"chat_id"`
 	// ID of the info message referring to the call.
-	Msg_id uint32 `json:"msg_id"`
+	MsgId uint32 `json:"msg_id"`
 }
 
 func (*EventTypeIncomingCallAccepted) isEventTypeVariant() {}
@@ -1445,11 +1445,11 @@ func (v *EventTypeIncomingCallAccepted) MarshalJSON() ([]byte, error) {
 // Outgoing call accepted.
 type EventTypeOutgoingCallAccepted struct {
 	// User-defined info passed to dc_accept_incoming_call(
-	Accept_call_info string `json:"accept_call_info"`
+	AcceptCallInfo string `json:"accept_call_info"`
 	// ID of the chat which the message belongs to.
-	Chat_id uint32 `json:"chat_id"`
+	ChatId uint32 `json:"chat_id"`
 	// ID of the info message referring to the call.
-	Msg_id uint32 `json:"msg_id"`
+	MsgId uint32 `json:"msg_id"`
 }
 
 func (*EventTypeOutgoingCallAccepted) isEventTypeVariant() {}
@@ -1465,9 +1465,9 @@ func (v *EventTypeOutgoingCallAccepted) MarshalJSON() ([]byte, error) {
 // Call ended.
 type EventTypeCallEnded struct {
 	// ID of the chat which the message belongs to.
-	Chat_id uint32 `json:"chat_id"`
+	ChatId uint32 `json:"chat_id"`
 	// ID of the info message referring to the call.
-	Msg_id uint32 `json:"msg_id"`
+	MsgId uint32 `json:"msg_id"`
 }
 
 func (*EventTypeCallEnded) isEventTypeVariant() {}
@@ -2073,7 +2073,7 @@ type MessageListItem interface {
 }
 
 type MessageListItemMessage struct {
-	Msg_id uint32 `json:"msg_id"`
+	MsgId uint32 `json:"msg_id"`
 }
 
 func (*MessageListItemMessage) isMessageListItemVariant() {}
@@ -2416,7 +2416,7 @@ type QrAskVerifyContact struct {
 	// Authentication code.
 	Authcode string `json:"authcode"`
 	// ID of the contact.
-	Contact_id uint32 `json:"contact_id"`
+	ContactId uint32 `json:"contact_id"`
 	// Fingerprint of the contact key as scanned from the QR code.
 	Fingerprint string `json:"fingerprint"`
 	// Invite number.
@@ -2438,7 +2438,7 @@ type QrAskVerifyGroup struct {
 	// Authentication code.
 	Authcode string `json:"authcode"`
 	// ID of the contact.
-	Contact_id uint32 `json:"contact_id"`
+	ContactId uint32 `json:"contact_id"`
 	// Fingerprint of the contact key as scanned from the QR code.
 	Fingerprint string `json:"fingerprint"`
 	// Group ID.
@@ -2464,7 +2464,7 @@ type QrAskJoinBroadcast struct {
 	// Authentication code.
 	Authcode string `json:"authcode"`
 	// ID of the contact who owns the broadcast channel and created the QR code.
-	Contact_id uint32 `json:"contact_id"`
+	ContactId uint32 `json:"contact_id"`
 	// Fingerprint of the broadcast channel owner's key as scanned from the QR code.
 	Fingerprint string `json:"fingerprint"`
 	// A string of random characters, uniquely identifying this broadcast channel across all databases/clients. Called `grpid` for historic reasons: The id of multi-user chats is always called `grpid` in the database because groups were once the only multi-user chats.
@@ -2490,7 +2490,7 @@ func (v *QrAskJoinBroadcast) MarshalJSON() ([]byte, error) {
 // Ask the user if they want to start chatting.
 type QrFprOk struct {
 	// Contact ID.
-	Contact_id uint32 `json:"contact_id"`
+	ContactId uint32 `json:"contact_id"`
 }
 
 func (*QrFprOk) isQrVariant()    {}
@@ -2506,7 +2506,7 @@ func (v *QrFprOk) MarshalJSON() ([]byte, error) {
 // Scanned fingerprint does not match the last seen fingerprint.
 type QrFprMismatch struct {
 	// Contact ID.
-	Contact_id *uint32 `json:"contact_id,omitempty"`
+	ContactId *uint32 `json:"contact_id,omitempty"`
 }
 
 func (*QrFprMismatch) isQrVariant()    {}
@@ -2554,9 +2554,9 @@ func (v *QrAccount) MarshalJSON() ([]byte, error) {
 // Provides a backup that can be retrieved using iroh-net based backup transfer protocol.
 type QrBackup2 struct {
 	// Authentication token.
-	Auth_token string `json:"auth_token"`
+	AuthToken string `json:"auth_token"`
 	// Iroh node address.
-	Node_addr string `json:"node_addr"`
+	NodeAddr string `json:"node_addr"`
 }
 
 func (*QrBackup2) isQrVariant()    {}
@@ -2584,8 +2584,8 @@ func (v *QrBackupTooNew) MarshalJSON() ([]byte, error) {
 
 // Ask the user if they want to use the given service for video chats.
 type QrWebrtcInstance struct {
-	Domain           string `json:"domain"`
-	Instance_pattern string `json:"instance_pattern"`
+	Domain          string `json:"domain"`
+	InstancePattern string `json:"instance_pattern"`
 }
 
 func (*QrWebrtcInstance) isQrVariant()    {}
@@ -2627,7 +2627,7 @@ func (v *QrProxy) MarshalJSON() ([]byte, error) {
 // Optionally, a draft message could be provided. Ask the user if they want to start chatting.
 type QrAddr struct {
 	// Contact ID.
-	Contact_id uint32 `json:"contact_id"`
+	ContactId uint32 `json:"contact_id"`
 	// Draft message.
 	Draft *string `json:"draft,omitempty"`
 }
@@ -2681,7 +2681,7 @@ type QrWithdrawVerifyContact struct {
 	// Authentication code.
 	Authcode string `json:"authcode"`
 	// Contact ID.
-	Contact_id uint32 `json:"contact_id"`
+	ContactId uint32 `json:"contact_id"`
 	// Fingerprint of the contact key as scanned from the QR code.
 	Fingerprint string `json:"fingerprint"`
 	// Invite number.
@@ -2703,7 +2703,7 @@ type QrWithdrawVerifyGroup struct {
 	// Authentication code.
 	Authcode string `json:"authcode"`
 	// Contact ID.
-	Contact_id uint32 `json:"contact_id"`
+	ContactId uint32 `json:"contact_id"`
 	// Fingerprint of the contact key as scanned from the QR code.
 	Fingerprint string `json:"fingerprint"`
 	// Group ID.
@@ -2729,7 +2729,7 @@ type QrWithdrawJoinBroadcast struct {
 	// Authentication code.
 	Authcode string `json:"authcode"`
 	// Contact ID. Always `ContactId::SELF`.
-	Contact_id uint32 `json:"contact_id"`
+	ContactId uint32 `json:"contact_id"`
 	// Fingerprint of the contact key as scanned from the QR code.
 	Fingerprint string `json:"fingerprint"`
 	// ID, uniquely identifying this chat. Called grpid for historic reasons.
@@ -2755,7 +2755,7 @@ type QrReviveVerifyContact struct {
 	// Authentication code.
 	Authcode string `json:"authcode"`
 	// Contact ID.
-	Contact_id uint32 `json:"contact_id"`
+	ContactId uint32 `json:"contact_id"`
 	// Fingerprint of the contact key as scanned from the QR code.
 	Fingerprint string `json:"fingerprint"`
 	// Invite number.
@@ -2777,7 +2777,7 @@ type QrReviveVerifyGroup struct {
 	// Authentication code.
 	Authcode string `json:"authcode"`
 	// Contact ID.
-	Contact_id uint32 `json:"contact_id"`
+	ContactId uint32 `json:"contact_id"`
 	// Fingerprint of the contact key as scanned from the QR code.
 	Fingerprint string `json:"fingerprint"`
 	// Group ID.
@@ -2803,7 +2803,7 @@ type QrReviveJoinBroadcast struct {
 	// Authentication code.
 	Authcode string `json:"authcode"`
 	// Contact ID. Always `ContactId::SELF`.
-	Contact_id uint32 `json:"contact_id"`
+	ContactId uint32 `json:"contact_id"`
 	// Fingerprint of the contact key as scanned from the QR code.
 	Fingerprint string `json:"fingerprint"`
 	// Globally unique chat ID. Called grpid for historic reasons.
