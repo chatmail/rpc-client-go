@@ -408,7 +408,7 @@ func TestAccount_SearchMessages(t *testing.T) {
 
 func TestAccount_GetChatlistEntries(t *testing.T) {
 	t.Parallel()
-	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
 		entries, err := rpc.GetChatlistEntries(accId, nil, strptr("unknown"), nil)
 		require.Nil(t, err)
 		require.Empty(t, entries)
@@ -420,6 +420,10 @@ func TestAccount_GetChatlistEntries(t *testing.T) {
 		items, err := rpc.GetChatlistItemsByEntries(accId, entries)
 		require.Nil(t, err)
 		require.NotEmpty(t, items)
+
+		rpc.Transport.(*IOTransport).Close()
+		_, err = rpc.GetChatlistItemsByEntries(accId, entries)
+		require.NotNil(t, err)
 	})
 }
 
@@ -547,6 +551,10 @@ func TestAccount_GetAllAccounts(t *testing.T) {
 		accounts, err := rpc.GetAllAccounts()
 		require.Nil(t, err)
 		require.NotEmpty(t, accounts)
+
+		rpc.Transport.(*IOTransport).Close()
+		_, err = rpc.GetAllAccounts()
+		require.NotNil(t, err)
 	})
 }
 
@@ -557,6 +565,10 @@ func TestAccount_GetAccountInfo(t *testing.T) {
 		require.Nil(t, err)
 		require.NotNil(t, info)
 		require.Equal(t, (&AccountUnconfigured{}).GetKind(), info.GetKind())
+
+		rpc.Transport.(*IOTransport).Close()
+		_, err = rpc.GetAccountInfo(accId)
+		require.NotNil(t, err)
 	})
 }
 
@@ -906,6 +918,10 @@ func TestMsg_GetMessages(t *testing.T) {
 		msgs, err := rpc.GetMessages(accId, []uint32{msgId})
 		require.Nil(t, err)
 		require.NotEmpty(t, msgs)
+
+		rpc.Transport.(*IOTransport).Close()
+		_, err = rpc.GetMessages(accId, []uint32{msgId})
+		require.NotNil(t, err)
 	})
 }
 
@@ -934,6 +950,10 @@ func TestMsg_GetMessageListItems(t *testing.T) {
 		items, err := rpc.GetMessageListItems(accId, chatId, false, false)
 		require.Nil(t, err)
 		require.NotEmpty(t, items)
+
+		rpc.Transport.(*IOTransport).Close()
+		_, err = rpc.GetMessageListItems(accId, chatId, false, false)
+		require.NotNil(t, err)
 	})
 }
 
@@ -1128,6 +1148,10 @@ func TestRpc_CheckQr(t *testing.T) {
 		qr, err := rpc.CheckQr(accId, "https://example.com")
 		require.Nil(t, err)
 		require.NotNil(t, qr)
+
+		rpc.Transport.(*IOTransport).Close()
+		_, err = rpc.CheckQr(accId, "")
+		require.NotNil(t, err)
 	})
 }
 
