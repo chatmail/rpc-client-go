@@ -14,6 +14,10 @@ on:
       - "scripts/**"
       - "v2/**"
 
+concurrency:
+  group: readme-sync-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
 
   test:
@@ -51,17 +55,15 @@ jobs:
         with:
           files: README.md
 
-      - name: Commit changes
+      - name: Commit and push changes
         if: steps.verify-changed-files.outputs.files_changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add README.md
           git commit -m "chore: Update README.md"
-
-      - name: Push changes
-        if: steps.verify-changed-files.outputs.files_changed == 'true'
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.head_ref }}
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
+          git pull --rebase origin ${{ github.head_ref || github.ref_name }}
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
