@@ -27,8 +27,6 @@ cd v2
 go get -u ./...
 ```
 
-To update the `deltachat-rpc-server` program in CI, update `scripts/run_tests.sh`
-
 ### Updating the auto-generated bindings
 
 To update the auto-generated RPC bindings code:
@@ -36,3 +34,5 @@ To update the auto-generated RPC bindings code:
 ```
 ./scripts/update_rpc.sh
 ```
+
+This will also update the `deltachat-rpc-server` version in `scripts/run_tests.sh`
