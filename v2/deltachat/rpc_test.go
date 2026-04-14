@@ -323,15 +323,6 @@ func TestAccount_GetBackup(t *testing.T) {
 	})
 }
 
-func TestAccount_InitiateAutocryptKeyTransfer(t *testing.T) {
-	t.Parallel()
-	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		code, err := rpc.InitiateAutocryptKeyTransfer(accId)
-		require.Nil(t, err)
-		require.NotEmpty(t, code)
-	})
-}
-
 func TestAccount_FreshMsgs(t *testing.T) {
 	t.Parallel()
 	acfactory.WithOnlineAccount(func(rpc1 *Rpc, accId1 uint32) {
@@ -1486,16 +1477,6 @@ func TestRpc_MiscSaveSticker(t *testing.T) {
 		msgId, err := rpc.SendSticker(accId, chatId, acfactory.TestFile("test.webp", 1))
 		require.Nil(t, err)
 		require.Nil(t, rpc.MiscSaveSticker(accId, msgId, "Saved"))
-	})
-}
-
-func TestRpc_ContinueAutocryptKeyTransfer(t *testing.T) {
-	t.Parallel()
-	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		// ContinueAutocryptKeyTransfer with a non-existent message ID returns an error,
-		// but the function itself is covered.
-		err := rpc.ContinueAutocryptKeyTransfer(accId, 99999, "invalid-setup-code")
-		require.NotNil(t, err)
 	})
 }
 

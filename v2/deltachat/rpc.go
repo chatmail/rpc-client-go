@@ -323,6 +323,7 @@ func (rpc *Rpc) Configure(accountId uint32) error {
 // from a server encoded in a QR code.
 // - [Self::list_transports()] to get a list of all configured transports.
 // - [Self::delete_transport()] to remove a transport.
+// - [Self::set_transport_unpublished()] to set whether contacts see this transport.
 func (rpc *Rpc) AddOrUpdateTransport(accountId uint32, param EnteredLoginParam) error {
 	return rpc.Transport.Call(rpc.Context, "add_or_update_transport", accountId, param)
 }
@@ -342,9 +343,20 @@ func (rpc *Rpc) AddTransportFromQr(accountId uint32, qr string) error {
 // Returns the list of all email accounts that are used as a transport in the current profile.
 // Use [Self::add_or_update_transport()] to add or change a transport
 // and [Self::delete_transport()] to delete a transport.
+// Use [Self::list_transports_ex()] to additionally query
+// whether the transports are marked as 'unpublished'.
 func (rpc *Rpc) ListTransports(accountId uint32) ([]EnteredLoginParam, error) {
 	var result []EnteredLoginParam
 	err := rpc.Transport.CallResult(rpc.Context, &result, "list_transports", accountId)
+	return result, err
+}
+
+// Returns the list of all email accounts that are used as a transport in the current profile.
+// Use [Self::add_or_update_transport()] to add or change a transport
+// and [Self::delete_transport()] to delete a transport.
+func (rpc *Rpc) ListTransportsEx(accountId uint32) ([]TransportListEntry, error) {
+	var result []TransportListEntry
+	err := rpc.Transport.CallResult(rpc.Context, &result, "list_transports_ex", accountId)
 	return result, err
 }
 
@@ -352,6 +364,20 @@ func (rpc *Rpc) ListTransports(accountId uint32) ([]EnteredLoginParam, error) {
 // (i.e. [EnteredLoginParam::addr]).
 func (rpc *Rpc) DeleteTransport(accountId uint32, addr string) error {
 	return rpc.Transport.Call(rpc.Context, "delete_transport", accountId, addr)
+}
+
+// Change whether the transport is unpublished.
+//
+// Unpublished transports are not advertised to contacts,
+// and self-sent messages are not sent there,
+// so that we don't cause extra messages to the corresponding inbox,
+// but can still receive messages from contacts who don't know our new transport addresses yet.
+//
+// The default is false, but when the user updates from a version that didn't have this flag,
+// existing secondary transports are set to unpublished,
+// so that an existing transport address doesn't suddenly get spammed with a lot of messages.
+func (rpc *Rpc) SetTransportUnpublished(accountId uint32, addr string, unpublished bool) error {
+	return rpc.Transport.Call(rpc.Context, "set_transport_unpublished", accountId, addr, unpublished)
 }
 
 // Signal an ongoing process to stop.
@@ -396,13 +422,20 @@ func (rpc *Rpc) GetFreshMsgCnt(accountId uint32, chatId uint32) (uint, error) {
 	return result, err
 }
 
-// Gets messages to be processed by the bot and returns their IDs.
+// (deprecated) Gets messages to be processed by the bot and returns their IDs.
 //
 // Only messages with database ID higher than `last_msg_id` config value
 // are returned. After processing the messages, the bot should
 // update `last_msg_id` by calling [`markseen_msgs`]
 // or manually updating the value to avoid getting already
 // processed messages.
+//
+// Deprecated 2026-04: This returns the message's id as soon as the first part arrives,
+// even if it is not fully downloaded yet.
+// The bot needs to wait for the message to be fully downloaded.
+// Since this is usually not the desired behavior,
+// bots should instead use the #DC_EVENT_INCOMING_MSG / [`types::events::EventType::IncomingMsg`]
+// event for getting notified about new messages.
 //
 // [`markseen_msgs`]: Self::markseen_msgs
 func (rpc *Rpc) GetNextMsgs(accountId uint32) ([]uint32, error) {
@@ -411,7 +444,7 @@ func (rpc *Rpc) GetNextMsgs(accountId uint32) ([]uint32, error) {
 	return result, err
 }
 
-// Waits for messages to be processed by the bot and returns their IDs.
+// (deprecated) Waits for messages to be processed by the bot and returns their IDs.
 //
 // This function is similar to [`get_next_msgs`],
 // but waits for internal new message notification before returning.
@@ -421,6 +454,13 @@ func (rpc *Rpc) GetNextMsgs(accountId uint32) ([]uint32, error) {
 // old messages after initialization and during the bot runtime.
 // To shutdown the bot, stopping I/O can be used to interrupt
 // pending or next `wait_next_msgs` call.
+//
+// Deprecated 2026-04: This returns the message's id as soon as the first part arrives,
+// even if it is not fully downloaded yet.
+// The bot needs to wait for the message to be fully downloaded.
+// Since this is usually not the desired behavior,
+// bots should instead use the #DC_EVENT_INCOMING_MSG / [`types::events::EventType::IncomingMsg`]
+// event for getting notified about new messages.
 //
 // [`get_next_msgs`]: Self::get_next_msgs
 func (rpc *Rpc) WaitNextMsgs(accountId uint32) ([]uint32, error) {
@@ -437,16 +477,6 @@ func (rpc *Rpc) EstimateAutoDeletionCount(accountId uint32, fromServer bool, sec
 	var result uint
 	err := rpc.Transport.CallResult(rpc.Context, &result, "estimate_auto_deletion_count", accountId, fromServer, seconds)
 	return result, err
-}
-
-func (rpc *Rpc) InitiateAutocryptKeyTransfer(accountId uint32) (string, error) {
-	var result string
-	err := rpc.Transport.CallResult(rpc.Context, &result, "initiate_autocrypt_key_transfer", accountId)
-	return result, err
-}
-
-func (rpc *Rpc) ContinueAutocryptKeyTransfer(accountId uint32, messageId uint32, setupCode string) error {
-	return rpc.Transport.Call(rpc.Context, "continue_autocrypt_key_transfer", accountId, messageId, setupCode)
 }
 
 func (rpc *Rpc) GetChatlistEntries(accountId uint32, listFlags *uint32, queryString *string, queryContactId *uint32) ([]uint32, error) {
@@ -552,6 +582,8 @@ func (rpc *Rpc) GetChatSecurejoinQrCode(accountId uint32, chatId *uint32) (strin
 // The scanning device will pass the scanned content to `checkQr()` then;
 // if `checkQr()` returns `askVerifyContact` or `askVerifyGroup`
 // an out-of-band-verification can be joined using `secure_join()`
+//
+// @deprecated as of 2026-03; use create_qr_svg(get_chat_securejoin_qr_code()) instead.
 //
 // chat_id: If set to a group-chat-id,
 // the Verified-Group-Invite protocol is offered in the QR code;
@@ -832,6 +864,14 @@ func (rpc *Rpc) MarknoticedAllChats(accountId uint32) error {
 // See also markseen_msgs().
 func (rpc *Rpc) MarknoticedChat(accountId uint32, chatId uint32) error {
 	return rpc.Transport.Call(rpc.Context, "marknoticed_chat", accountId, chatId)
+}
+
+// Marks the last incoming message in the chat as _fresh_.
+//
+// UI can use this to offer a "mark unread" option,
+// so that already noticed chats get a badge counter again.
+func (rpc *Rpc) MarkfreshChat(accountId uint32, chatId uint32) error {
+	return rpc.Transport.Call(rpc.Context, "markfresh_chat", accountId, chatId)
 }
 
 // Returns the message that is immediately followed by the last seen
@@ -1278,10 +1318,19 @@ func (rpc *Rpc) GetBackupQr(accountId uint32) (string, error) {
 // even if there is no concurrent call to [`CommandApi::provide_backup`],
 // but will fail after 60 seconds to avoid deadlocks.
 //
+// @deprecated as of 2026-03; use `create_qr_svg(get_backup_qr())` instead.
+//
 // Returns the QR code rendered as an SVG image.
 func (rpc *Rpc) GetBackupQrSvg(accountId uint32) (string, error) {
 	var result string
 	err := rpc.Transport.CallResult(rpc.Context, &result, "get_backup_qr_svg", accountId)
+	return result, err
+}
+
+// Renders the given text as a QR code SVG image.
+func (rpc *Rpc) CreateQrSvg(text string) (string, error) {
+	var result string
+	err := rpc.Transport.CallResult(rpc.Context, &result, "create_qr_svg", text)
 	return result, err
 }
 

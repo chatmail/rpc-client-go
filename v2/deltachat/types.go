@@ -1428,6 +1428,8 @@ func (v *EventTypeIncomingCall) MarshalJSON() ([]byte, error) {
 type EventTypeIncomingCallAccepted struct {
 	// ID of the chat which the message belongs to.
 	ChatId uint32 `json:"chat_id"`
+	// The call was accepted from this device (process).
+	FromThisDevice bool `json:"from_this_device"`
 	// ID of the info message referring to the call.
 	MsgId uint32 `json:"msg_id"`
 }
@@ -1901,7 +1903,6 @@ type Message struct {
 	IsEdited           bool          `json:"isEdited"`
 	IsForwarded        bool          `json:"isForwarded"`
 	IsInfo             bool          `json:"isInfo"`
-	IsSetupmessage     bool          `json:"isSetupmessage"`
 	OriginalMsgId      *uint32       `json:"originalMsgId,omitempty"`
 	OverrideSenderName *string       `json:"overrideSenderName,omitempty"`
 	ParentId           *uint32       `json:"parentId,omitempty"`
@@ -1910,7 +1911,6 @@ type Message struct {
 	ReceivedTimestamp  int64         `json:"receivedTimestamp"`
 	SavedMessageId     *uint32       `json:"savedMessageId,omitempty"`
 	Sender             Contact       `json:"sender"`
-	SetupCodeBegin     *string       `json:"setupCodeBegin,omitempty"`
 	// True if the message was correctly encrypted&signed, false otherwise. Historically, UIs showed a small padlock on the message then.
 	//
 	// Today, the UIs should instead show a small email-icon on the message if `show_padlock` is `false`, and nothing if it is `true`.
@@ -1949,7 +1949,6 @@ func (s *Message) UnmarshalJSON(data []byte) error {
 		IsEdited              bool              `json:"isEdited"`
 		IsForwarded           bool              `json:"isForwarded"`
 		IsInfo                bool              `json:"isInfo"`
-		IsSetupmessage        bool              `json:"isSetupmessage"`
 		OriginalMsgId         *uint32           `json:"originalMsgId,omitempty"`
 		OverrideSenderName    *string           `json:"overrideSenderName,omitempty"`
 		ParentId              *uint32           `json:"parentId,omitempty"`
@@ -1958,7 +1957,6 @@ func (s *Message) UnmarshalJSON(data []byte) error {
 		ReceivedTimestamp     int64             `json:"receivedTimestamp"`
 		SavedMessageId        *uint32           `json:"savedMessageId,omitempty"`
 		Sender                Contact           `json:"sender"`
-		SetupCodeBegin        *string           `json:"setupCodeBegin,omitempty"`
 		ShowPadlock           bool              `json:"showPadlock"`
 		SortTimestamp         int64             `json:"sortTimestamp"`
 		State                 uint32            `json:"state"`
@@ -1993,7 +1991,6 @@ func (s *Message) UnmarshalJSON(data []byte) error {
 	s.IsEdited = raw.IsEdited
 	s.IsForwarded = raw.IsForwarded
 	s.IsInfo = raw.IsInfo
-	s.IsSetupmessage = raw.IsSetupmessage
 	s.OriginalMsgId = raw.OriginalMsgId
 	s.OverrideSenderName = raw.OverrideSenderName
 	s.ParentId = raw.ParentId
@@ -2001,7 +1998,6 @@ func (s *Message) UnmarshalJSON(data []byte) error {
 	s.ReceivedTimestamp = raw.ReceivedTimestamp
 	s.SavedMessageId = raw.SavedMessageId
 	s.Sender = raw.Sender
-	s.SetupCodeBegin = raw.SetupCodeBegin
 	s.ShowPadlock = raw.ShowPadlock
 	s.SortTimestamp = raw.SortTimestamp
 	s.State = raw.State
@@ -2159,7 +2155,6 @@ type MessageLoadResultMessage struct {
 	IsEdited           bool          `json:"isEdited"`
 	IsForwarded        bool          `json:"isForwarded"`
 	IsInfo             bool          `json:"isInfo"`
-	IsSetupmessage     bool          `json:"isSetupmessage"`
 	OriginalMsgId      *uint32       `json:"originalMsgId,omitempty"`
 	OverrideSenderName *string       `json:"overrideSenderName,omitempty"`
 	ParentId           *uint32       `json:"parentId,omitempty"`
@@ -2168,7 +2163,6 @@ type MessageLoadResultMessage struct {
 	ReceivedTimestamp  int64         `json:"receivedTimestamp"`
 	SavedMessageId     *uint32       `json:"savedMessageId,omitempty"`
 	Sender             Contact       `json:"sender"`
-	SetupCodeBegin     *string       `json:"setupCodeBegin,omitempty"`
 	// True if the message was correctly encrypted&signed, false otherwise. Historically, UIs showed a small padlock on the message then.
 	//
 	// Today, the UIs should instead show a small email-icon on the message if `show_padlock` is `false`, and nothing if it is `true`.
@@ -2421,6 +2415,8 @@ type QrAskVerifyContact struct {
 	Fingerprint string `json:"fingerprint"`
 	// Invite number.
 	Invitenumber string `json:"invitenumber"`
+	// Whether the inviter supports the new Securejoin v3 protocol
+	IsV3 bool `json:"is_v3"`
 }
 
 func (*QrAskVerifyContact) isQrVariant()    {}
@@ -2447,6 +2443,8 @@ type QrAskVerifyGroup struct {
 	Grpname string `json:"grpname"`
 	// Invite number.
 	Invitenumber string `json:"invitenumber"`
+	// Whether the inviter supports the new Securejoin v3 protocol
+	IsV3 bool `json:"is_v3"`
 }
 
 func (*QrAskVerifyGroup) isQrVariant()    {}
@@ -2471,6 +2469,8 @@ type QrAskJoinBroadcast struct {
 	Grpid string `json:"grpid"`
 	// Invite number.
 	Invitenumber string `json:"invitenumber"`
+	// Whether the inviter supports the new Securejoin v3 protocol
+	IsV3 bool `json:"is_v3"`
 	// The user-visible name of this broadcast channel
 	Name string `json:"name"`
 }
@@ -3073,6 +3073,13 @@ const (
 	// This message contains a users iroh node address.
 	SystemMessageTypeIrohNodeAddr SystemMessageType = "IrohNodeAddr"
 )
+
+type TransportListEntry struct {
+	// Whether this transport is set to 'unpublished'. See `set_transport_unpublished` / `setTransportUnpublished` for details.
+	IsUnpublished bool `json:"isUnpublished"`
+	// The login data entered by the user.
+	Param EnteredLoginParam `json:"param"`
+}
 
 type VcardContact struct {
 	// Email address.

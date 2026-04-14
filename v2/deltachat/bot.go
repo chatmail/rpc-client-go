@@ -2,7 +2,6 @@ package deltachat
 
 import (
 	"context"
-	"fmt"
 	"sync"
 )
 
@@ -70,12 +69,6 @@ func (bot *Bot) Run() error {
 	bot.ctxMutex.Unlock()
 
 	bot.Rpc.StartIoForAllAccounts() //nolint:errcheck
-	ids, _ := bot.Rpc.GetAllAccountIds()
-	for _, accId := range ids {
-		if isConf, _ := bot.Rpc.IsConfigured(accId); isConf {
-			bot.processMessages(accId) // Process old messages.
-		}
-	}
 
 	eventChan := make(chan Event)
 	go func() {
@@ -97,8 +90,10 @@ func (bot *Bot) Run() error {
 			return nil
 		}
 		bot.onEvent(evData.ContextId, evData.Event)
-		if _, ok := evData.Event.(*EventTypeIncomingMsg); ok {
-			bot.processMessages(evData.ContextId)
+		if event, ok := evData.Event.(*EventTypeIncomingMsg); ok {
+			if bot.newMsgHandler != nil {
+				bot.newMsgHandler(bot, evData.ContextId, event.MsgId)
+			}
 		}
 	}
 }
@@ -127,19 +122,5 @@ func (bot *Bot) onEvent(accId uint32, event EventType) {
 		handler(bot, accId, event)
 	} else if bot.onUnhandledEvent != nil {
 		bot.onUnhandledEvent(bot, accId, event)
-	}
-}
-
-func (bot *Bot) processMessages(accId uint32) {
-	msgIds, err := bot.Rpc.GetNextMsgs(accId)
-	if err != nil {
-		return
-	}
-	for _, msgId := range msgIds {
-		lastMsgId := fmt.Sprintf("%v", msgId)
-		bot.Rpc.SetConfig(accId, "last_msg_id", &lastMsgId) //nolint:errcheck
-		if bot.newMsgHandler != nil {
-			bot.newMsgHandler(bot, accId, msgId)
-		}
 	}
 }
