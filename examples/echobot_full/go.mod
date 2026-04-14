@@ -3,7 +3,7 @@ module executable
 go 1.25.0
 
 require (
-	github.com/chatmail/rpc-client-go/v2 v2.0.1
+	github.com/chatmail/rpc-client-go/v2 v2.49.0
 	github.com/stretchr/testify v1.8.2
 )
 
