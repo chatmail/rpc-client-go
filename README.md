@@ -21,6 +21,9 @@ This package depends on a standalone Chatmail RPC server
 `PATH`. For installation instructions check:
 https://github.com/chatmail/core/tree/main/deltachat-rpc-server
 
+**WARNING:** Install the version of `deltachat-rpc-server` that matches the version of this package,
+different versions might be incompatible and cause unexpected errors.
+
 ## Developing bots faster ⚡
 
 If you want to develop bots, you should probably use this
