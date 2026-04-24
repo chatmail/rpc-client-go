@@ -2008,6 +2008,7 @@ func (s *Message) UnmarshalJSON(data []byte) error {
 	s.VcardContact = raw.VcardContact
 	s.ViewType = raw.ViewType
 	s.WebxdcHref = raw.WebxdcHref
+	s.Quote = new(MessageQuote)
 	if len(raw.Quote) > 0 && string(raw.Quote) != "null" {
 		if err := unmarshalMessageQuote(raw.Quote, s.Quote); err != nil {
 			return err
