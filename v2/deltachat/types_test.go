@@ -403,6 +403,15 @@ func TestUnmarshalMessageQuote(t *testing.T) {
 	require.NotNil(t, unmarshalMessageQuote(json.RawMessage(`{"kind":"Unknown"}`), &out))
 }
 
+func TestMessage_UnmarshalJSON_WithQuote(t *testing.T) {
+	t.Parallel()
+
+	var msg Message
+	require.Nil(t, json.Unmarshal([]byte(`{"chatId":0,"dimensionsHeight":0,"dimensionsWidth":0,"downloadState":"Done","duration":0,"fileBytes":0,"fromId":0,"hasDeviatingTimestamp":false,"hasHtml":false,"hasLocation":false,"id":1,"isBot":false,"isEdited":false,"isForwarded":false,"isInfo":false,"receivedTimestamp":0,"showPadlock":false,"sortTimestamp":0,"state":0,"subject":"","systemMessageType":"Unknown","text":"hello","timestamp":0,"viewType":"Text","quote":{"kind":"JustText","text":"quoted text"},"sender":{"address":"","authName":"","color":"","id":0,"isBlocked":false,"isKeyContact":false,"isVerified":false,"lastSeen":0,"name":"","nameAndAddr":"","profileImage":null,"status":"","verifiedBy":0}}`), &msg))
+	require.NotNil(t, msg.Quote)
+	require.Equal(t, "JustText", (*msg.Quote).GetKind())
+}
+
 func TestMuteDuration_MarshalJSON(t *testing.T) {
 	t.Parallel()
 
