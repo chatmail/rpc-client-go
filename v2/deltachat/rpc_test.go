@@ -974,6 +974,25 @@ func TestMsg_GetMessageHtml(t *testing.T) {
 	})
 }
 
+func TestMsg_GetMessage(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		// message without quote
+		msgId1, err := rpc.SendMsg(accId, chatId, MessageData{Text: strptr("hello")})
+		require.Nil(t, err)
+		msg1, err := rpc.GetMessage(accId, msgId1)
+		require.Nil(t, err)
+		require.Nil(t, msg1.Quote)
+
+		// message with quote
+		msgId2, err := rpc.SendMsg(accId, chatId, MessageData{Text: strptr("hi"), QuotedMessageId: &msgId1})
+		require.Nil(t, err)
+		msg2, err := rpc.GetMessage(accId, msgId2)
+		require.Nil(t, err)
+		require.NotNil(t, msg2.Quote)
+	})
+}
+
 func TestMsg_GetMessageNotificationInfo(t *testing.T) {
 	t.Parallel()
 	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
