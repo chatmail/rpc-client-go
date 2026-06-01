@@ -2009,9 +2009,11 @@ func (s *Message) UnmarshalJSON(data []byte) error {
 	s.ViewType = raw.ViewType
 	s.WebxdcHref = raw.WebxdcHref
 	if len(raw.Quote) > 0 && string(raw.Quote) != "null" {
-		if err := unmarshalMessageQuote(raw.Quote, s.Quote); err != nil {
+		var obj MessageQuote
+		if err := unmarshalMessageQuote(raw.Quote, &obj); err != nil {
 			return err
 		}
+		s.Quote = &obj
 	}
 	return nil
 }
