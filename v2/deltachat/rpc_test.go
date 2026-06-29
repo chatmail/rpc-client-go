@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/creachadair/jrpc2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1363,13 +1362,47 @@ func TestRpc_ImportVcard(t *testing.T) {
 	})
 }
 
-func TestRpc_SetDraftVcard(t *testing.T) {
+func TestRpc_LocationStreaming(t *testing.T) {
 	t.Parallel()
 	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
-		// FIXME: this shouldn't throw error, see https://github.com/chatmail/core/issues/7960
-		err := rpc.SetDraftVcard(accId, chatId, []uint32{ContactSelf})
-		require.NotNil(t, err)
-		require.Equal(t, "Wrong viewtype for vCard: Text", err.(*jrpc2.Error).Message)
+		// test setting location when location streaming is disabled
+		enabled, err := rpc.SetLocation(1, 1, 1)
+		require.Nil(t, err)
+		require.False(t, enabled)
+
+		enabled, err = rpc.IsSendingLocations(accId)
+		require.Nil(t, err)
+		require.False(t, enabled)
+		enabled, err = rpc.IsSendingLocationsToChat(accId, chatId)
+		require.Nil(t, err)
+		require.False(t, enabled)
+
+		// enable location streaming
+		err = rpc.SendLocationsToChat(accId, chatId, 9999)
+		require.Nil(t, err)
+
+		// test setting location when location streaming is enabled
+		enabled, err = rpc.SetLocation(1, 1, 1)
+		require.Nil(t, err)
+		require.True(t, enabled)
+
+		enabled, err = rpc.IsSendingLocations(accId)
+		require.Nil(t, err)
+		require.True(t, enabled)
+		enabled, err = rpc.IsSendingLocationsToChat(accId, chatId)
+		require.Nil(t, err)
+		require.True(t, enabled)
+
+		// disable location streaming
+		err = rpc.StopSendingLocations()
+		require.Nil(t, err)
+
+		enabled, err = rpc.IsSendingLocations(accId)
+		require.Nil(t, err)
+		require.False(t, enabled)
+		enabled, err = rpc.IsSendingLocationsToChat(accId, chatId)
+		require.Nil(t, err)
+		require.False(t, enabled)
 	})
 }
 

@@ -469,10 +469,19 @@ func (rpc *Rpc) WaitNextMsgs(accountId uint32) ([]uint32, error) {
 	return result, err
 }
 
-// Estimate the number of messages that will be deleted
-// by the set_config()-options `delete_device_after` or `delete_server_after`.
+// Estimates the number of messages that will be deleted
+// by the `set_config()`-option `delete_device_after`.
+//
 // This is typically used to show the estimated impact to the user
 // before actually enabling deletion of old messages.
+//
+// Messages in the "Saved Messages" chat are not counted as they will not be deleted automatically.
+//
+// Parameters:
+// - `from_server`: Deprecated, pass `false` here
+// - `seconds`: Count messages older than the given number of seconds.
+//
+// Returns the number of messages that are older than the given number of seconds.
 func (rpc *Rpc) EstimateAutoDeletionCount(accountId uint32, fromServer bool, seconds int64) (uint, error) {
 	var result uint
 	err := rpc.Transport.CallResult(rpc.Context, &result, "estimate_auto_deletion_count", accountId, fromServer, seconds)
@@ -749,9 +758,6 @@ func (rpc *Rpc) CreateBroadcastList(accountId uint32) (uint32, error) {
 // because the word "channel" already appears a lot in the code,
 // which would make it hard to grep for it.
 //
-// After creation, the chat contains no recipients and is in _unpromoted_ state;
-// see [`CommandApi::create_group_chat`] for more information on the unpromoted state.
-//
 // Returns the created chat's id.
 func (rpc *Rpc) CreateBroadcast(accountId uint32, chatName string) (uint32, error) {
 	var result uint32
@@ -938,8 +944,22 @@ func (rpc *Rpc) MarkseenMsgs(accountId uint32, msgIds []uint32) error {
 	return rpc.Transport.Call(rpc.Context, "markseen_msgs", accountId, msgIds)
 }
 
-// Returns all messages of a particular chat.
+// Get all message IDs belonging to a chat.
 //
+// The list is already sorted and starts with the oldest message.
+// Clients should not try to re-sort the list as this would be an expensive action
+// and would result in inconsistencies between clients.
+// Note that the messages are not necessarily sorted by their ID or by their displayed timestamp;
+// UIs need to handle both the case of descending message IDs
+// and of decreasing timestamps.
+//
+// Optionally, 'daymarkers' added to the ID array may help to
+// implement virtual lists.
+//
+// Parameters:
+//
+// * chat_id The chat ID of which the messages IDs should be queried.
+// * _info_only: Deprecated, pass `false` here.
 // * `add_daymarker` - If `true`, add day markers as `DC_MSG_ID_DAYMARKER` to the result,
 // e.g. [1234, 1237, 9, 1239]. The day marker timestamp is the midnight one for the
 // corresponding (following) day in the local timezone.
@@ -958,6 +978,12 @@ func (rpc *Rpc) GetExistingMsgIds(accountId uint32, msgIds []uint32) ([]uint32, 
 	return result, err
 }
 
+// Get all messages belonging to a chat.
+//
+// Similar to `get_message_ids` / `getMessageIds`,
+// see that function for details.
+// The difference is that this function here returns a list of `MessageListItem`,
+// which is an enum of a message or a daymarker.
 func (rpc *Rpc) GetMessageListItems(accountId uint32, chatId uint32, infoOnly bool, addDaymarker bool) ([]MessageListItem, error) {
 	var rawList []json.RawMessage
 	if err := rpc.Transport.CallResult(rpc.Context, &rawList, "get_message_list_items", accountId, chatId, infoOnly, addDaymarker); err != nil {
@@ -1245,11 +1271,6 @@ func (rpc *Rpc) MakeVcard(accountId uint32, contacts []uint32) (string, error) {
 	return result, err
 }
 
-// Sets vCard containing the given contacts to the message draft.
-func (rpc *Rpc) SetDraftVcard(accountId uint32, msgId uint32, contacts []uint32) error {
-	return rpc.Transport.Call(rpc.Context, "set_draft_vcard", accountId, msgId, contacts)
-}
-
 // Returns the [`ChatId`] for the 1:1 chat with `contact_id` if it exists.
 //
 // If it does not exist, `None` is returned.
@@ -1388,10 +1409,49 @@ func (rpc *Rpc) GetConnectivityHtml(accountId uint32) (string, error) {
 	return result, err
 }
 
+// Sets current location.
+//
+// Returns true if location streaming is currently
+// enabled and locations should be updated.
+//
+// Location is represented as latitude and longitude in degrees
+// and horizontal accuracy in meters.
+func (rpc *Rpc) SetLocation(latitude float64, longitude float64, accuracy float64) (bool, error) {
+	var result bool
+	err := rpc.Transport.CallResult(rpc.Context, &result, "set_location", latitude, longitude, accuracy)
+	return result, err
+}
+
 func (rpc *Rpc) GetLocations(accountId uint32, chatId *uint32, contactId *uint32, timestampBegin int64, timestampEnd int64) ([]Location, error) {
 	var result []Location
 	err := rpc.Transport.CallResult(rpc.Context, &result, "get_locations", accountId, chatId, contactId, timestampBegin, timestampEnd)
 	return result, err
+}
+
+// Enables location streaming in chat identified by `chat_id` for `seconds` seconds.
+//
+// Pass 0 as the number of seconds to disable location streaming in the chat.
+func (rpc *Rpc) SendLocationsToChat(accountId uint32, chatId uint32, seconds int64) error {
+	return rpc.Transport.Call(rpc.Context, "send_locations_to_chat", accountId, chatId, seconds)
+}
+
+// Returns whether any chat is sending locations.
+func (rpc *Rpc) IsSendingLocations(accountId uint32) (bool, error) {
+	var result bool
+	err := rpc.Transport.CallResult(rpc.Context, &result, "is_sending_locations", accountId)
+	return result, err
+}
+
+// Returns whether `chat_id` is sending locations.
+func (rpc *Rpc) IsSendingLocationsToChat(accountId uint32, chatId uint32) (bool, error) {
+	var result bool
+	err := rpc.Transport.CallResult(rpc.Context, &result, "is_sending_locations_to_chat", accountId, chatId)
+	return result, err
+}
+
+// Stops sending locations to all chats.
+func (rpc *Rpc) StopSendingLocations() error {
+	return rpc.Transport.Call(rpc.Context, "stop_sending_locations")
 }
 
 func (rpc *Rpc) SendWebxdcStatusUpdate(accountId uint32, instanceMsgId uint32, updateStr string, descr *string) error {
@@ -1529,18 +1589,19 @@ func (rpc *Rpc) ResendMessages(accountId uint32, messageIds []uint32) error {
 	return rpc.Transport.Call(rpc.Context, "resend_messages", accountId, messageIds)
 }
 
+// @deprecated as of 2026-04; use `send_msg` with `Viewtype::Sticker` instead.
 func (rpc *Rpc) SendSticker(accountId uint32, chatId uint32, stickerPath string) (uint32, error) {
 	var result uint32
 	err := rpc.Transport.CallResult(rpc.Context, &result, "send_sticker", accountId, chatId, stickerPath)
 	return result, err
 }
 
-// Send a reaction to message.
+// Sends a reaction to message.
 //
-// Reaction is a string of emojis separated by spaces. Reaction to a
-// single message can be sent multiple times. The last reaction
-// received overrides all previously received reactions. It is
-// possible to remove all reactions by sending an empty string.
+// A reaction is a string that represents an emoji.
+// You can call this function again to change the emoji;
+// the last sent reaction overrides all previously sent reactions.
+// It is possible to remove the reaction by sending an empty string.
 func (rpc *Rpc) SendReaction(accountId uint32, messageId uint32, reaction []string) (uint32, error) {
 	var result uint32
 	err := rpc.Transport.CallResult(rpc.Context, &result, "send_reaction", accountId, messageId, reaction)

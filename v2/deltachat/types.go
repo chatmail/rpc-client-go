@@ -496,6 +496,10 @@ type EnteredLoginParam struct {
 	Addr string `json:"addr"`
 	// TLS options: whether to allow invalid certificates and/or invalid hostnames. Default: Automatic
 	CertificateChecks *EnteredCertificateChecks `json:"certificateChecks,omitempty"`
+	// IMAP server folder.
+	//
+	// Defaults to "INBOX" if not set. Should not be an empty string.
+	ImapFolder *string `json:"imapFolder,omitempty"`
 	// Imap server port.
 	ImapPort *uint16 `json:"imapPort,omitempty"`
 	// Imap socket security.
@@ -2997,7 +3001,7 @@ type Reaction struct {
 type Reactions struct {
 	// Unique reactions and their count, sorted in descending order.
 	Reactions []Reaction `json:"reactions"`
-	// Map from a contact to it's reaction to message.
+	// Map from a contact to it's reaction to message. There is only a single reaction per contact, but this contains a list of reactions for historical reasons.
 	ReactionsByContact map[string][]string `json:"reactionsByContact"`
 }
 
@@ -3108,7 +3112,7 @@ const (
 	ViewtypeImage Viewtype = "Image"
 	// Animated GIF message.
 	ViewtypeGif Viewtype = "Gif"
-	// Message containing a sticker, similar to image. NB: When sending, the message viewtype may be changed to `Image` by some heuristics like checking for transparent pixels. Use `Message::force_sticker()` to disable them.
+	// Message containing a sticker, similar to image.
 	//
 	// If possible, the ui should display the image without borders in a transparent way. A click on a sticker will offer to install the sticker set in some future.
 	ViewtypeSticker Viewtype = "Sticker"
@@ -3139,6 +3143,10 @@ type WebxdcMessageInfo struct {
 	Icon string `json:"icon"`
 	// True if full internet access should be granted to the app.
 	InternetAccess bool `json:"internetAccess"`
+	// Define if the local user is the one who initially shared the webxdc application in the chat.
+	IsAppSender bool `json:"isAppSender"`
+	// Define if the app runs in a broadcasting context.
+	IsBroadcast bool `json:"isBroadcast"`
 	// The name of the app.
 	//
 	// Defaults to the filename if not set in the manifest.
