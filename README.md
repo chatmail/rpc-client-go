@@ -3,7 +3,7 @@
 [![Latest release](https://img.shields.io/github/v/tag/chatmail/rpc-client-go?label=release)](https://pkg.go.dev/github.com/chatmail/rpc-client-go/v2)
 [![Go Reference](https://pkg.go.dev/badge/github.com/chatmail/rpc-client-go/v2.svg)](https://pkg.go.dev/github.com/chatmail/rpc-client-go/v2)
 [![CI](https://github.com/chatmail/rpc-client-go/actions/workflows/ci.yml/badge.svg)](https://github.com/chatmail/rpc-client-go/actions/workflows/ci.yml)
-![Coverage](https://img.shields.io/badge/Coverage-89.3%25-brightgreen)
+![Coverage](https://img.shields.io/badge/Coverage-89.6%25-brightgreen)
 
 Chatmail client & bot API for Golang.
 
