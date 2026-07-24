@@ -322,7 +322,7 @@ func (rpc *Rpc) Configure(accountId uint32) error {
 // - [Self::add_transport_from_qr()] to add a transport
 // from a server encoded in a QR code.
 // - [Self::list_transports()] to get a list of all configured transports.
-// - [Self::delete_transport()] to remove a transport.
+// - [Self::set_transport_unpublished()] to remove a transport.
 // - [Self::set_transport_unpublished()] to set whether contacts see this transport.
 func (rpc *Rpc) AddOrUpdateTransport(accountId uint32, param EnteredLoginParam) error {
 	return rpc.Transport.Call(rpc.Context, "add_or_update_transport", accountId, param)
@@ -342,40 +342,55 @@ func (rpc *Rpc) AddTransportFromQr(accountId uint32, qr string) error {
 
 // Returns the list of all email accounts that are used as a transport in the current profile.
 // Use [Self::add_or_update_transport()] to add or change a transport
-// and [Self::delete_transport()] to delete a transport.
-// Use [Self::list_transports_ex()] to additionally query
-// whether the transports are marked as 'unpublished'.
+// and [Self::set_transport_unpublished()] to remove a transport.
 func (rpc *Rpc) ListTransports(accountId uint32) ([]EnteredLoginParam, error) {
 	var result []EnteredLoginParam
 	err := rpc.Transport.CallResult(rpc.Context, &result, "list_transports", accountId)
 	return result, err
 }
 
+// Deprecated 2026-06: This is not needed by UI implementations anymore,
+// because unpublished relays now count as removed from the user point of view,
+// and must not be shown in the list of relays.
+// This means that UIs should use `list_transports()` instead of this function.
+//
 // Returns the list of all email accounts that are used as a transport in the current profile.
+//
+// As opposed to `list_transports()`, this function also returns unpublished transports,
+// and for each returned transport it returns the information whether or not is `unpublished`.
+//
 // Use [Self::add_or_update_transport()] to add or change a transport
-// and [Self::delete_transport()] to delete a transport.
+// and [Self::set_transport_unpublished()] to change whether a transport is 'published'.
 func (rpc *Rpc) ListTransportsEx(accountId uint32) ([]TransportListEntry, error) {
 	var result []TransportListEntry
 	err := rpc.Transport.CallResult(rpc.Context, &result, "list_transports_ex", accountId)
 	return result, err
 }
 
-// Removes the transport with the specified email address
-// (i.e. [EnteredLoginParam::addr]).
+// Immediately deletes a transport, potentially causing messages not to arrive.
+// This must ONLY be used by the automated tests.
+// UI implementations must use [`Self::set_transport_unpublished`] instead.
 func (rpc *Rpc) DeleteTransport(accountId uint32, addr string) error {
 	return rpc.Transport.Call(rpc.Context, "delete_transport", accountId, addr)
 }
 
 // Change whether the transport is unpublished.
+// UIs should call this function when the user clicks on "Remove".
+// Core will keep listening on this transport for some time,
+// and automatically remove it once it is no longer needed.
 //
 // Unpublished transports are not advertised to contacts,
 // and self-sent messages are not sent there,
 // so that we don't cause extra messages to the corresponding inbox,
 // but can still receive messages from contacts who don't know our new transport addresses yet.
 //
-// The default is false, but when the user updates from a version that didn't have this flag,
-// existing secondary transports are set to unpublished,
-// so that an existing transport address doesn't suddenly get spammed with a lot of messages.
+// When more transports are added by [`Self::add_or_update_transport()`] or [`Self::add_transport_from_qr`],
+// the least recently needed unpublished transport is automatically removed
+// if this is necessary in order to stay below the maximum number of allowed relays.
+// Also, unpublished transports that are not used to receive any new messages for a time defined by
+// [`UNPUBLISHED_TRANSPORT_KEEP_TIME`] are automatically removed.
+//
+// [`UNPUBLISHED_TRANSPORT_KEEP_TIME`]: deltachat::sql::UNPUBLISHED_TRANSPORT_KEEP_TIME
 func (rpc *Rpc) SetTransportUnpublished(accountId uint32, addr string, unpublished bool) error {
 	return rpc.Transport.Call(rpc.Context, "set_transport_unpublished", accountId, addr, unpublished)
 }
@@ -733,7 +748,9 @@ func (rpc *Rpc) CreateGroupChat(accountId uint32, name string, protect bool) (ui
 // Create a new unencrypted group chat.
 //
 // Same as [`Self::create_group_chat`], but the chat is unencrypted and can only have
-// address-contacts.
+// address-contacts. NB: Chats with similar names and the same members are merged on other
+// devices, but usually users don't create such chats and look up the existing one instead, so
+// chat split on the first device is acceptable.
 func (rpc *Rpc) CreateGroupChatUnencrypted(accountId uint32, name string) (uint32, error) {
 	var result uint32
 	err := rpc.Transport.CallResult(rpc.Context, &result, "create_group_chat_unencrypted", accountId, name)

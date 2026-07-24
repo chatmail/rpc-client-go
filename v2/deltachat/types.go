@@ -508,8 +508,6 @@ type EnteredLoginParam struct {
 	ImapServer *string `json:"imapServer,omitempty"`
 	// Imap username.
 	ImapUser *string `json:"imapUser,omitempty"`
-	// If true, login via OAUTH2 (not recommended anymore). Default: false
-	Oauth2 *bool `json:"oauth2,omitempty"`
 	// Password.
 	Password string `json:"password"`
 	// SMTP Password.
@@ -991,6 +989,24 @@ func (v *EventTypeMsgRead) MarshalJSON() ([]byte, error) {
 		Kind string `json:"kind"`
 		alias
 	}{Kind: "MsgRead", alias: alias(*v)})
+}
+
+// Like [`EventType::MsgRead`], but also fires on subsequent MDNs, if there are multiple receivers, i.e. in groups and channels.
+type EventTypeMsgReadCountChanged struct {
+	// ID of the chat which the message belongs to.
+	ChatId uint32 `json:"chatId"`
+	// ID of the message that was read.
+	MsgId uint32 `json:"msgId"`
+}
+
+func (*EventTypeMsgReadCountChanged) isEventTypeVariant() {}
+func (*EventTypeMsgReadCountChanged) GetKind() string     { return "MsgReadCountChanged" }
+func (v *EventTypeMsgReadCountChanged) MarshalJSON() ([]byte, error) {
+	type alias EventTypeMsgReadCountChanged
+	return json.Marshal(struct {
+		Kind string `json:"kind"`
+		alias
+	}{Kind: "MsgReadCountChanged", alias: alias(*v)})
 }
 
 // A single message was deleted.
@@ -1640,6 +1656,12 @@ func unmarshalEventType(data json.RawMessage, out *EventType) error {
 		*out = &v
 	case "MsgRead":
 		var v EventTypeMsgRead
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		*out = &v
+	case "MsgReadCountChanged":
+		var v EventTypeMsgReadCountChanged
 		if err := json.Unmarshal(data, &v); err != nil {
 			return err
 		}
