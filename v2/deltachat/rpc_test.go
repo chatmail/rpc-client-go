@@ -650,12 +650,12 @@ func TestAccount_MaybeNetwork(t *testing.T) {
 	})
 }
 
-func TestAccount_GetProviderInfo(t *testing.T) {
+func TestRpc_GetAppVersion(t *testing.T) {
 	t.Parallel()
-	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
-		info, err := rpc.GetProviderInfo(accId, "user@gmail.com")
-		require.Nil(t, err)
-		require.NotNil(t, info)
+	acfactory.WithRpc(func(rpc *Rpc) {
+		version, err := rpc.GetAppVersion("test-client", "test-source")
+		require.NoError(t, err)
+		require.Nil(t, version)
 	})
 }
 
@@ -1089,12 +1089,12 @@ func TestRpc_Sleep(t *testing.T) {
 	})
 }
 
-func TestAccount_GetPushState(t *testing.T) {
+func TestRpc_IsSendingFinished(t *testing.T) {
 	t.Parallel()
-	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		state, err := rpc.GetPushState(accId)
-		require.Nil(t, err)
-		require.NotEmpty(t, string(state))
+	acfactory.WithRpc(func(rpc *Rpc) {
+		finished, err := rpc.IsSendingFinished()
+		require.NoError(t, err)
+		require.True(t, finished)
 	})
 }
 

@@ -124,13 +124,35 @@ func (rpc *Rpc) StopIoForAllAccounts() error {
 
 // Performs a background fetch for all accounts in parallel with a timeout.
 //
-// The `AccountsBackgroundFetchDone` event is emitted at the end even in case of timeout.
+// For an account with IO stopped, the scheduler is paused
+// and every transport is fetched concurrently on a dedicated connection.
+// The account is done as soon as one transport received messages, the others stop.
+// Only one batch of messages is fetched per transport this way,
+// so a larger backlog is left to the next call or to started IO.
+//
+// For an account with IO running, IMAP IDLE is interrupted on every transport
+// and the account is done once every transport is.
+//
+// The call never waits for outgoing messages and never triggers sending them itself.
+// Received messages may still queue replies, securejoin handshakes for example,
+// which go out only while IO is running.
+// Use `is_sending_finished()` to tell whether the outgoing queue is empty.
+//
+// The `AccountsBackgroundFetchDone` event is emitted at the end even in case of timeout,
+// and immediately if another background fetch is already running.
 // Process all events until you get this one and you can safely return to the background
-// without forgetting to create notifications caused by timing race conditions.
+// without forgetting to create a generic notification if no message was fetched.
+// The event carries no data identifying the call it belongs to,
+// so it marks your own call only if no concurrent background fetch is happening.
 func (rpc *Rpc) BackgroundFetch(timeoutInSeconds float64) error {
 	return rpc.Transport.Call(rpc.Context, "background_fetch", timeoutInSeconds)
 }
 
+// Stops an ongoing `background_fetch()` call, making it return early
+// without waiting for the remaining transports or for the timeout.
+//
+// The `AccountsBackgroundFetchDone` event is emitted as usual.
+// Does nothing if no background fetch is running.
 func (rpc *Rpc) StopBackgroundFetch() error {
 	return rpc.Transport.Call(rpc.Context, "stop_background_fetch")
 }
@@ -156,29 +178,10 @@ func (rpc *Rpc) GetAccountInfo(accountId uint32) (Account, error) {
 	return result, err
 }
 
-// Get the current push notification state.
-func (rpc *Rpc) GetPushState(accountId uint32) (NotifyState, error) {
-	var result NotifyState
-	err := rpc.Transport.CallResult(rpc.Context, &result, "get_push_state", accountId)
-	return result, err
-}
-
 // Get the combined filesize of an account in bytes
 func (rpc *Rpc) GetAccountFileSize(accountId uint32) (uint64, error) {
 	var result uint64
 	err := rpc.Transport.CallResult(rpc.Context, &result, "get_account_file_size", accountId)
-	return result, err
-}
-
-// Returns provider for the given domain.
-//
-// This function looks up domain in offline database.
-//
-// For compatibility, email address can be passed to this function
-// instead of the domain.
-func (rpc *Rpc) GetProviderInfo(accountId uint32, email string) (*ProviderInfo, error) {
-	var result *ProviderInfo
-	err := rpc.Transport.CallResult(rpc.Context, &result, "get_provider_info", accountId, email)
 	return result, err
 }
 
@@ -322,8 +325,7 @@ func (rpc *Rpc) Configure(accountId uint32) error {
 // - [Self::add_transport_from_qr()] to add a transport
 // from a server encoded in a QR code.
 // - [Self::list_transports()] to get a list of all configured transports.
-// - [Self::set_transport_unpublished()] to remove a transport.
-// - [Self::set_transport_unpublished()] to set whether contacts see this transport.
+// - [Self::delete_transport()] to remove a transport.
 func (rpc *Rpc) AddOrUpdateTransport(accountId uint32, param EnteredLoginParam) error {
 	return rpc.Transport.Call(rpc.Context, "add_or_update_transport", accountId, param)
 }
@@ -340,59 +342,34 @@ func (rpc *Rpc) AddTransportFromQr(accountId uint32, qr string) error {
 	return rpc.Transport.Call(rpc.Context, "add_transport_from_qr", accountId, qr)
 }
 
+// Adds an initial transport on the chatmail relay that answers fastest
+// and lets the profile add further ones in the background.
+//
+// A `DCACCOUNT:` or `DCLOGIN:` `qr` code adds a single transport
+// while securejoin codes add the inviter's relays to the candidates.
+//
+// Does nothing if the profile already has a transport.
+func (rpc *Rpc) InitTransports(accountId uint32, qr *string) error {
+	return rpc.Transport.Call(rpc.Context, "init_transports", accountId, qr)
+}
+
 // Returns the list of all email accounts that are used as a transport in the current profile.
 // Use [Self::add_or_update_transport()] to add or change a transport
-// and [Self::set_transport_unpublished()] to remove a transport.
+// and [Self::delete_transport()] to remove a transport.
 func (rpc *Rpc) ListTransports(accountId uint32) ([]EnteredLoginParam, error) {
 	var result []EnteredLoginParam
 	err := rpc.Transport.CallResult(rpc.Context, &result, "list_transports", accountId)
 	return result, err
 }
 
-// Deprecated 2026-06: This is not needed by UI implementations anymore,
-// because unpublished relays now count as removed from the user point of view,
-// and must not be shown in the list of relays.
-// This means that UIs should use `list_transports()` instead of this function.
+// Removes a transport.
+// UIs should call this function when the user removes a relay.
 //
-// Returns the list of all email accounts that are used as a transport in the current profile.
-//
-// As opposed to `list_transports()`, this function also returns unpublished transports,
-// and for each returned transport it returns the information whether or not is `unpublished`.
-//
-// Use [Self::add_or_update_transport()] to add or change a transport
-// and [Self::set_transport_unpublished()] to change whether a transport is 'published'.
-func (rpc *Rpc) ListTransportsEx(accountId uint32) ([]TransportListEntry, error) {
-	var result []TransportListEntry
-	err := rpc.Transport.CallResult(rpc.Context, &result, "list_transports_ex", accountId)
-	return result, err
-}
-
-// Immediately deletes a transport, potentially causing messages not to arrive.
-// This must ONLY be used by the automated tests.
-// UI implementations must use [`Self::set_transport_unpublished`] instead.
+// The last transport cannot be removed.
+// If the removed transport was the one used for sending,
+// another one is chosen automatically.
 func (rpc *Rpc) DeleteTransport(accountId uint32, addr string) error {
 	return rpc.Transport.Call(rpc.Context, "delete_transport", accountId, addr)
-}
-
-// Change whether the transport is unpublished.
-// UIs should call this function when the user clicks on "Remove".
-// Core will keep listening on this transport for some time,
-// and automatically remove it once it is no longer needed.
-//
-// Unpublished transports are not advertised to contacts,
-// and self-sent messages are not sent there,
-// so that we don't cause extra messages to the corresponding inbox,
-// but can still receive messages from contacts who don't know our new transport addresses yet.
-//
-// When more transports are added by [`Self::add_or_update_transport()`] or [`Self::add_transport_from_qr`],
-// the least recently needed unpublished transport is automatically removed
-// if this is necessary in order to stay below the maximum number of allowed relays.
-// Also, unpublished transports that are not used to receive any new messages for a time defined by
-// [`UNPUBLISHED_TRANSPORT_KEEP_TIME`] are automatically removed.
-//
-// [`UNPUBLISHED_TRANSPORT_KEEP_TIME`]: deltachat::sql::UNPUBLISHED_TRANSPORT_KEEP_TIME
-func (rpc *Rpc) SetTransportUnpublished(accountId uint32, addr string, unpublished bool) error {
-	return rpc.Transport.Call(rpc.Context, "set_transport_unpublished", accountId, addr, unpublished)
 }
 
 // Signal an ongoing process to stop.
@@ -567,7 +544,7 @@ func (rpc *Rpc) BlockChat(accountId uint32, chatId uint32) error {
 // - The chat or the contact is **not blocked**, so new messages from the user/the group may appear as a contact request
 // and the user may create the chat again.
 // - **Groups are not left** - this would
-// be unexpected as (1) deleting a normal chat also does not prevent new mails
+// be unexpected as (1) deleting a single chat also does not prevent new mails
 // from arriving, (2) leaving a group requires sending a message to
 // all group members - especially for groups not used for a longer time, this is
 // really unexpected when deletion results in contacting all members again,
@@ -591,6 +568,8 @@ func (rpc *Rpc) GetChatEncryptionInfo(accountId uint32, chatId uint32) (string, 
 
 // Get QR code text that will offer a [SecureJoin](https://securejoin.delta.chat/) invitation.
 //
+// To reset invitations, pass the link to `set_config_from_qr()`.
+//
 // If `chat_id` is a group chat ID, SecureJoin QR code for the group is returned.
 // If `chat_id` is unset, setup contact QR code is returned.
 func (rpc *Rpc) GetChatSecurejoinQrCode(accountId uint32, chatId *uint32) (string, error) {
@@ -599,20 +578,19 @@ func (rpc *Rpc) GetChatSecurejoinQrCode(accountId uint32, chatId *uint32) (strin
 	return result, err
 }
 
-// Get QR code (text and SVG) that will offer a Setup-Contact or Verified-Group invitation.
+// Get QR code (text and SVG) that will offer a SecureJoin invitation.
 // The QR code is compatible to the OPENPGP4FPR format
 // so that a basic fingerprint comparison also works e.g. with OpenKeychain.
 //
 // The scanning device will pass the scanned content to `checkQr()` then;
 // if `checkQr()` returns `askVerifyContact` or `askVerifyGroup`
-// an out-of-band-verification can be joined using `secure_join()`
+// the securejoin protocol can be started using `secure_join()`
 //
 // @deprecated as of 2026-03; use create_qr_svg(get_chat_securejoin_qr_code()) instead.
 //
 // chat_id: If set to a group-chat-id,
-// the Verified-Group-Invite protocol is offered in the QR code;
-// works for protected groups as well as for normal groups.
-// If not set, the Setup-Contact protocol is offered in the QR code.
+// the SecureJoin QR code for the group is returned.
+// If not set, the setup contact QR code is returned.
 // See https://securejoin.delta.chat/ for details about both protocols.
 //
 // return format: `[code, svg]`
@@ -622,7 +600,7 @@ func (rpc *Rpc) GetChatSecurejoinQrCodeSvg(accountId uint32, chatId *uint32) (Pa
 	return result, err
 }
 
-// Continue a Setup-Contact or Verified-Group-Invite protocol
+// Continue the SecureJoin protocol
 // started on another device with `get_chat_securejoin_qr_code_svg()`.
 // This function is typically called when `check_qr()` returns
 // type=AskVerifyContact or type=AskVerifyGroup.
@@ -640,7 +618,6 @@ func (rpc *Rpc) GetChatSecurejoinQrCodeSvg(accountId uint32, chatId *uint32) (Pa
 // to `check_qr()`.
 //
 // **returns**: The chat ID of the joined chat, the UI may redirect to the this chat.
-// A returned chat ID does not guarantee that the chat is protected or the belonging contact is verified.
 func (rpc *Rpc) SecureJoin(accountId uint32, qr string) (uint32, error) {
 	var result uint32
 	err := rpc.Transport.CallResult(rpc.Context, &result, "secure_join", accountId, qr)
@@ -686,8 +663,6 @@ func (rpc *Rpc) RemoveContactFromChat(accountId uint32, chatId uint32, contactId
 // If the group is already _promoted_ (any message was sent to the group),
 // all group members are informed by a special status message that is sent automatically by this function.
 //
-// If the group has group protection enabled, only verified contacts can be added to the group.
-//
 // Sends out #DC_EVENT_CHAT_MODIFIED and #DC_EVENT_MSGS_CHANGED if a status message was sent.
 func (rpc *Rpc) AddContactToChat(accountId uint32, chatId uint32, contactId uint32) error {
 	return rpc.Transport.Call(rpc.Context, "add_contact_to_chat", accountId, chatId, contactId)
@@ -695,7 +670,7 @@ func (rpc *Rpc) AddContactToChat(accountId uint32, chatId uint32, contactId uint
 
 // Get the contact IDs belonging to a chat.
 //
-// - for normal chats, the function always returns exactly one contact,
+// - for single chats, the function always returns exactly one contact,
 // DC_CONTACT_ID_SELF is returned only for SELF-chats.
 //
 // - for group chats all members are returned, DC_CONTACT_ID_SELF is returned
@@ -940,7 +915,7 @@ func (rpc *Rpc) IsChatMuted(accountId uint32, chatId uint32) (bool, error) {
 // The concrete action depends on the type of the chat and on the users settings
 // (dc_msgs_presented() may be a better name therefore, but well. :)
 //
-// - For normal chats, the IMAP state is updated, MDN is sent
+// - For single chats, the IMAP state is updated, MDN is sent
 // (if set_config()-options `mdns_enabled` is set)
 // and the internal state is changed to @ref DC_STATE_IN_SEEN to reflect these actions.
 //
@@ -977,7 +952,7 @@ func (rpc *Rpc) MarkseenMsgs(accountId uint32, msgIds []uint32) error {
 //
 // * chat_id The chat ID of which the messages IDs should be queried.
 // * _info_only: Deprecated, pass `false` here.
-// * `add_daymarker` - If `true`, add day markers as `DC_MSG_ID_DAYMARKER` to the result,
+// * `add_daymarker` - If `true`, add day markers as `MsgId::DAYMARKER` to the result,
 // e.g. [1234, 1237, 9, 1239]. The day marker timestamp is the midnight one for the
 // corresponding (following) day in the local timezone.
 func (rpc *Rpc) GetMessageIds(accountId uint32, chatId uint32, infoOnly bool, addDaymarker bool) ([]uint32, error) {
@@ -1051,6 +1026,18 @@ func (rpc *Rpc) GetMessages(accountId uint32, messageIds []uint32) (map[string]M
 func (rpc *Rpc) GetMessageNotificationInfo(accountId uint32, messageId uint32) (MessageNotificationInfo, error) {
 	var result MessageNotificationInfo
 	err := rpc.Transport.CallResult(rpc.Context, &result, "get_message_notification_info", accountId, messageId)
+	return result, err
+}
+
+// Sets the "pinned" state for a message.
+func (rpc *Rpc) SetPinnedMessageState(accountId uint32, messageId uint32, pinnedState bool) error {
+	return rpc.Transport.Call(rpc.Context, "set_pinned_message_state", accountId, messageId, pinnedState)
+}
+
+// Returns all pinned messages of a chat.
+func (rpc *Rpc) GetPinnedMessages(accountId uint32, chatId uint32) ([]uint32, error) {
+	var result []uint32
+	err := rpc.Transport.CallResult(rpc.Context, &result, "get_pinned_messages", accountId, chatId)
 	return result, err
 }
 
@@ -1228,7 +1215,7 @@ func (rpc *Rpc) ChangeContactName(accountId uint32, contactId uint32, name strin
 
 // Get encryption info for a contact.
 // Get a multi-line encryption info, containing your fingerprint and the
-// fingerprint of the contact, used e.g. to compare the fingerprints for a simple out-of-band verification.
+// fingerprint of the contact, used e.g. to compare the fingerprints out-of-band.
 func (rpc *Rpc) GetContactEncryptionInfo(accountId uint32, contactId uint32) (string, error) {
 	var result string
 	err := rpc.Transport.CallResult(rpc.Context, &result, "get_contact_encryption_info", accountId, contactId)
@@ -1288,7 +1275,7 @@ func (rpc *Rpc) MakeVcard(accountId uint32, contacts []uint32) (string, error) {
 	return result, err
 }
 
-// Returns the [`ChatId`] for the 1:1 chat with `contact_id` if it exists.
+// Returns the [`ChatId`] for the single chat with `contact_id` if it exists.
 //
 // If it does not exist, `None` is returned.
 func (rpc *Rpc) GetChatIdByContactId(accountId uint32, contactId uint32) (*uint32, error) {
@@ -1391,15 +1378,18 @@ func (rpc *Rpc) MaybeNetwork() error {
 	return rpc.Transport.Call(rpc.Context, "maybe_network")
 }
 
+// Waits until all transports are idle or failed and no background work is left.
+// Never returns unless I/O is started. Must ONLY be used by tests.
+func (rpc *Rpc) WaitForAllWorkDone(accountId uint32) error {
+	return rpc.Transport.Call(rpc.Context, "wait_for_all_work_done", accountId)
+}
+
 // Get the current connectivity, i.e. whether the device is connected to the IMAP server.
 // One of:
-// - DC_CONNECTIVITY_NOT_CONNECTED (1000-1999): Show e.g. the string "Not connected" or a red dot
-// - DC_CONNECTIVITY_CONNECTING (2000-2999): Show e.g. the string "Connecting…" or a yellow dot
-// - DC_CONNECTIVITY_WORKING (3000-3999): Show e.g. the string "Getting new messages" or a spinning wheel
-// - DC_CONNECTIVITY_CONNECTED (>=4000): Show e.g. the string "Connected" or a green dot
-//
-// We don't use exact values but ranges here so that we can split up
-// states into multiple states in the future.
+// - DC_CONNECTIVITY_NOT_CONNECTED (1000): Show e.g. the string "Not connected" or a red dot
+// - DC_CONNECTIVITY_CONNECTING (2000): Show e.g. the string "Connecting…" or a yellow dot
+// - DC_CONNECTIVITY_WORKING (3000): Show e.g. the string "Getting new messages" or a spinning wheel
+// - DC_CONNECTIVITY_CONNECTED (4000): Show e.g. the string "Connected" or a green dot
 //
 // Meant as a rough overview that can be shown
 // e.g. in the title of the main screen.
@@ -1516,6 +1506,9 @@ func (rpc *Rpc) GetWebxdcHref(accountId uint32, infoMsgId uint32) (*string, erro
 // Get blob encoded as base64 from a webxdc message
 //
 // path is the path of the file within webxdc archive
+//
+// If the file is `icon.png` or `icon.jpg`,
+// loading it may fail if dimensions are unexpectedly large.
 func (rpc *Rpc) GetWebxdcBlob(accountId uint32, instanceMsgId uint32, path string) (string, error) {
 	var result string
 	err := rpc.Transport.CallResult(rpc.Context, &result, "get_webxdc_blob", accountId, instanceMsgId, path)
@@ -1626,6 +1619,7 @@ func (rpc *Rpc) SendReaction(accountId uint32, messageId uint32, reaction []stri
 }
 
 // Returns reactions to the message.
+// `None` when there are no reactions.
 func (rpc *Rpc) GetMessageReactions(accountId uint32, messageId uint32) (*Reactions, error) {
 	var result *Reactions
 	err := rpc.Transport.CallResult(rpc.Context, &result, "get_message_reactions", accountId, messageId)
@@ -1737,5 +1731,42 @@ func (rpc *Rpc) MiscSetDraft(accountId uint32, chatId uint32, text *string, file
 func (rpc *Rpc) MiscSendDraft(accountId uint32, chatId uint32) (uint32, error) {
 	var result uint32
 	err := rpc.Transport.CallResult(rpc.Context, &result, "misc_send_draft", accountId, chatId)
+	return result, err
+}
+
+// Get version information of a specific client and source
+// across all configured accounts and transports.
+//
+// Returns the source with the highest `version_integer`.
+// If no matching version information is available at all, `None` is returned.
+//
+// UIs shall call the function after a reasonable time after app start,
+// when most relays have reported the information they have, say 30 seconds.
+// After that, once a day.
+// (it is accepted if by the simple approach an update message is delayed.
+// an event was considered, but that seemed more complex for few benefit:
+// as we do not know if "late" relays will report "better" versions,
+// also there we would work with timeouts etc.)
+//
+// If the reported `version_integer` is larger than the running app version,
+// the UI shall report to the user, that an update is available,
+// and, if possible, offer a direct update by the given URL.
+//
+// Security note: consumers need to verify themselves
+// that downloaded app files are valid before installing them.
+func (rpc *Rpc) GetAppVersion(clientId string, sourceId string) (*AppSource, error) {
+	var result *AppSource
+	err := rpc.Transport.CallResult(rpc.Context, &result, "get_app_version", clientId, sourceId)
+	return result, err
+}
+
+// Returns true if all accounts have empty outgoing message queue.
+//
+// This API is intended to be used by UIs
+// to request that operating system does not put the application in background
+// while there are still outgoing messages that are not sent out.
+func (rpc *Rpc) IsSendingFinished() (bool, error) {
+	var result bool
+	err := rpc.Transport.CallResult(rpc.Context, &result, "is_sending_finished")
 	return result, err
 }

@@ -2,9 +2,43 @@
 
 ## Unreleased
 
-## Added
+### Added
 
 - new Rpc API: `GetChatSecurejoinQrCode`, `importVcardContents`, `makeVcard`
+- RPC server 2.62.0 methods: `InitTransports`, `SetPinnedMessageState`,
+  `GetPinnedMessages`, `WaitForAllWorkDone`, `GetAppVersion`, and `IsSendingFinished`.
+- `AppSource` for client update information, `ContactFreshness` for contact
+  activity, `Message.IsPinned`, `MessageLoadResultMessage.IsPinned`, and the
+  `MessagePinned` / `MessageUnpinned` system-message types.
+- Schema method-set verification, new API and serialization tests, and an exact
+  server-version check in the integration test runner.
+
+### Changed
+
+- Breaking: bindings now match `deltachat-rpc-server` 2.62.0. Older server
+  versions are not supported by this revision's verification workflow.
+- Breaking: `Contact`, `FullChat`, and `ChatListItemFetchResultChatListItem`
+  replace `WasSeenRecently` with `Freshness`. Compare against
+  `ContactFreshnessRecentlySeen` where the old boolean was used; `Normal` and
+  `Old` are distinct states. Freshness is not a verification or trust signal.
+- `DeleteTransport` is now the server's supported relay-removal operation.
+  The last transport cannot be removed. `ListTransports` lists active relays.
+- Binding generation uses a pinned generator revision and stops on failure.
+  The minimum Go version is unchanged.
+
+### Removed
+
+- Breaking: RPC methods `GetProviderInfo`, `GetPushState`, `ListTransportsEx`,
+  and `SetTransportUnpublished`, which are absent from server 2.62.0.
+  Use `ListTransports` and `DeleteTransport` for current relay management;
+  the old unpublished-relay behavior is not preserved.
+- Breaking: `AccountConfigured.Addr`; `Contact.IsVerified`, `Contact.VerifierId`,
+  and `Contact.NameAndAddr`. These fields are no longer supplied by the server;
+  do not infer verification from contact activity or construct a profile address
+  from the removed field. Use `ListTransports` when relay addresses are needed.
+- Breaking: `NotifyState`, `ProviderInfo`, `TransportListEntry`,
+  `EventTypeImapMessageMoved`, `QrFprMismatch`, and `QrFprWithoutAddr`, which are
+  absent from the 2.62.0 schema.
 
 ## v1.2.14
 

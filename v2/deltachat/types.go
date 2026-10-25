@@ -28,7 +28,6 @@ type Account interface {
 }
 
 type AccountConfigured struct {
-	Addr        *string `json:"addr,omitempty"`
 	Color       string  `json:"color"`
 	DisplayName *string `json:"displayName,omitempty"`
 	Id          uint32  `json:"id"`
@@ -87,7 +86,17 @@ func unmarshalAccount(data json.RawMessage, out *Account) error {
 	return nil
 }
 
-// cheaper version of fullchat, omits: - contact_ids - fresh_message_counter - ephemeral_timer - self_in_group - was_seen_recently - can_send
+// Version information of a single source of a client, eg. "gplay" or "fdroid".
+type AppSource struct {
+	// Where to download that version. Security note: consumers need to verify themselves that downloaded app files are valid before installing them.
+	DownloadUrl string `json:"downloadUrl"`
+	// Always increasing version number.
+	VersionInteger uint32 `json:"versionInteger"`
+	// Version string that should be shown to the user. UI must not linkify the string as it may be interpreted like a phone number or an IP address.
+	VersionString string `json:"versionString"`
+}
+
+// cheaper version of fullchat, omits: - contact_ids - fresh_message_counter - ephemeral_timer - self_in_group - freshness - can_send
 //
 // used when you only need the basic metadata of a chat like type, name, profile picture
 type BasicChat struct {
@@ -301,12 +310,13 @@ type ChatListItemFetchResultChatListItem struct {
 	ChatType   ChatType `json:"chatType"`
 	Color      string   `json:"color"`
 	// contact id if this is a dm chat (for view profile entry in context menu)
-	DmChatContact       *uint32 `json:"dmChatContact,omitempty"`
-	FreshMessageCounter uint    `json:"freshMessageCounter"`
-	Id                  uint32  `json:"id"`
-	IsArchived          bool    `json:"isArchived"`
-	IsContactRequest    bool    `json:"isContactRequest"`
-	IsDeviceTalk        bool    `json:"isDeviceTalk"`
+	DmChatContact       *uint32          `json:"dmChatContact,omitempty"`
+	FreshMessageCounter uint             `json:"freshMessageCounter"`
+	Freshness           ContactFreshness `json:"freshness"`
+	Id                  uint32           `json:"id"`
+	IsArchived          bool             `json:"isArchived"`
+	IsContactRequest    bool             `json:"isContactRequest"`
+	IsDeviceTalk        bool             `json:"isDeviceTalk"`
 	// True if the chat is encrypted. This means that all messages in the chat are encrypted, and all contacts in the chat are "key-contacts", i.e. identified by the PGP key fingerprint.
 	//
 	// False if the chat is unencrypted. This means that all messages in the chat are unencrypted, and all contacts in the chat are "address-contacts", i.e. identified by the email address. The UI should mark this chat e.g. with a mail-letter icon.
@@ -333,7 +343,6 @@ type ChatListItemFetchResultChatListItem struct {
 	SummaryStatus       uint32  `json:"summaryStatus"`
 	SummaryText1        string  `json:"summaryText1"`
 	SummaryText2        string  `json:"summaryText2"`
-	WasSeenRecently     bool    `json:"wasSeenRecently"`
 }
 
 func (*ChatListItemFetchResultChatListItem) isChatListItemFetchResultVariant() {}
@@ -433,39 +442,31 @@ type Contact struct {
 	// Is encryption available for this contact.
 	//
 	// This can only be true for key-contacts. However, it is possible to have a key-contact for which encryption is not available because we don't have a key yet, e.g. if we just scanned the fingerprint from a QR code.
-	E2eeAvail bool   `json:"e2eeAvail"`
-	Id        uint32 `json:"id"`
-	IsBlocked bool   `json:"isBlocked"`
+	E2eeAvail bool             `json:"e2eeAvail"`
+	Freshness ContactFreshness `json:"freshness"`
+	Id        uint32           `json:"id"`
+	IsBlocked bool             `json:"isBlocked"`
 	// If the contact is a bot.
 	IsBot bool `json:"isBot"`
 	// Is the contact a key contact.
 	IsKeyContact bool `json:"isKeyContact"`
-	// True if the contact can be added to protected chats because SELF and contact have verified their fingerprints in both directions.
-	//
-	// See [`Self::verifier_id`]/`Contact.verifierId` for a guidance how to display these information.
-	IsVerified bool `json:"isVerified"`
 	// the contact's last seen timestamp
 	LastSeen     int64   `json:"lastSeen"`
 	Name         string  `json:"name"`
-	NameAndAddr  string  `json:"nameAndAddr"`
 	ProfileImage *string `json:"profileImage,omitempty"`
 	Status       string  `json:"status"`
-	// The contact ID that verified a contact.
-	//
-	// As verifier may be unknown, use [`Self::is_verified`]/`Contact.isVerified` to check if a contact can be added to a protected chat.
-	//
-	// UI should display the information in the contact's profile as follows:
-	//
-	// - If `verifierId` != 0, display text "Introduced by ..." with the name of the contact. Prefix the text by a green checkmark.
-	//
-	// - If `verifierId` == 0 and `isVerified` != 0, display "Introduced" prefixed by a green checkmark.
-	//
-	// - if `verifierId` == 0 and `isVerified` == 0, display nothing
-	//
-	// This contains the contact ID of the verifier. If it is `DC_CONTACT_ID_SELF`, we verified the contact ourself. If it is None/Null, we don't have verifier information or the contact is not verified.
-	VerifierId      *uint32 `json:"verifierId,omitempty"`
-	WasSeenRecently bool    `json:"wasSeenRecently"`
 }
+
+type ContactFreshness string
+
+const (
+	// Contact shall not be highlighted.
+	ContactFreshnessNormal ContactFreshness = "Normal"
+	// Contact was seen recently.
+	ContactFreshnessRecentlySeen ContactFreshness = "RecentlySeen"
+	// Contact was not seen for a long time.
+	ContactFreshnessOld ContactFreshness = "Old"
+)
 
 type DownloadState string
 
@@ -480,7 +481,7 @@ const (
 type EnteredCertificateChecks string
 
 const (
-	// `Automatic` means that provider database setting should be taken. If there is no provider database setting for certificate checks, check certificates strictly.
+	// `Automatic` means strict certificate checks, unless a legacy-domain override disables them.
 	EnteredCertificateChecksAutomatic EnteredCertificateChecks = "automatic"
 	// Ensure that TLS certificate is valid for the server hostname.
 	EnteredCertificateChecksStrict EnteredCertificateChecks = "strict"
@@ -690,21 +691,6 @@ func (v *EventTypeImapMessageDeleted) MarshalJSON() ([]byte, error) {
 		Kind string `json:"kind"`
 		alias
 	}{Kind: "ImapMessageDeleted", alias: alias(*v)})
-}
-
-// Emitted when an IMAP message has been moved
-type EventTypeImapMessageMoved struct {
-	Msg string `json:"msg"`
-}
-
-func (*EventTypeImapMessageMoved) isEventTypeVariant() {}
-func (*EventTypeImapMessageMoved) GetKind() string     { return "ImapMessageMoved" }
-func (v *EventTypeImapMessageMoved) MarshalJSON() ([]byte, error) {
-	type alias EventTypeImapMessageMoved
-	return json.Marshal(struct {
-		Kind string `json:"kind"`
-		alias
-	}{Kind: "ImapMessageMoved", alias: alias(*v)})
 }
 
 // Emitted before going into IDLE on the Inbox folder.
@@ -1199,7 +1185,7 @@ func (v *EventTypeSecurejoinInviterProgress) MarshalJSON() ([]byte, error) {
 type EventTypeSecurejoinJoinerProgress struct {
 	// ID of the inviting contact.
 	ContactId uint32 `json:"contactId"`
-	// Progress as: 400=vg-/vc-request-with-auth sent, typically shown as "alice@addr verified, introducing myself." (Bob has verified alice and waits until Alice does the same for him) 1000=vg-member-added/vc-contact-confirm received
+	// Progress as: 400=vg-/vc-request-with-auth sent, typically shown as "introducing myself." 1000=vg-member-added/vc-contact-confirm received
 	Progress uint16 `json:"progress"`
 }
 
@@ -1326,9 +1312,11 @@ func (v *EventTypeWebxdcInstanceDeleted) MarshalJSON() ([]byte, error) {
 	}{Kind: "WebxdcInstanceDeleted", alias: alias(*v)})
 }
 
-// Tells that the Background fetch was completed (or timed out). This event acts as a marker, when you reach this event you can be sure that all events emitted during the background fetch were processed.
+// Tells that a background fetch call is done: the fetch completed, timed out, was stopped or was not started.
 //
-// This event is only emitted by the account manager
+// For the call that started the fetch, this event acts as a marker: all events emitted during the fetch were processed once it is reached. A call made while another background fetch is running gets the event immediately, and the running fetch keeps emitting events until its own marker.
+//
+// This event is only emitted by the account manager.
 type EventTypeAccountsBackgroundFetchDone struct {
 }
 
@@ -1506,7 +1494,7 @@ func (v *EventTypeCallEnded) MarshalJSON() ([]byte, error) {
 //
 // UI should update the list.
 //
-// This event is emitted when transport synchronization messages arrives, but not when the UI modifies the transport list by itself.
+// The event is emitted on the device modifying the transports as well as on other devices applying the synced change.
 type EventTypeTransportsModified struct {
 }
 
@@ -1554,12 +1542,6 @@ func unmarshalEventType(data json.RawMessage, out *EventType) error {
 		*out = &v
 	case "ImapMessageDeleted":
 		var v EventTypeImapMessageDeleted
-		if err := json.Unmarshal(data, &v); err != nil {
-			return err
-		}
-		*out = &v
-	case "ImapMessageMoved":
-		var v EventTypeImapMessageMoved
 		if err := json.Unmarshal(data, &v); err != nil {
 			return err
 		}
@@ -1847,16 +1829,17 @@ func unmarshalEventType(data json.RawMessage, out *EventType) error {
 }
 
 type FullChat struct {
-	Archived            bool     `json:"archived"`
-	CanSend             bool     `json:"canSend"`
-	ChatType            ChatType `json:"chatType"`
-	Color               string   `json:"color"`
-	ContactIds          []uint32 `json:"contactIds"`
-	EphemeralTimer      uint32   `json:"ephemeralTimer"`
-	FreshMessageCounter uint     `json:"freshMessageCounter"`
-	Id                  uint32   `json:"id"`
-	IsContactRequest    bool     `json:"isContactRequest"`
-	IsDeviceChat        bool     `json:"isDeviceChat"`
+	Archived            bool             `json:"archived"`
+	CanSend             bool             `json:"canSend"`
+	ChatType            ChatType         `json:"chatType"`
+	Color               string           `json:"color"`
+	ContactIds          []uint32         `json:"contactIds"`
+	EphemeralTimer      uint32           `json:"ephemeralTimer"`
+	FreshMessageCounter uint             `json:"freshMessageCounter"`
+	Freshness           ContactFreshness `json:"freshness"`
+	Id                  uint32           `json:"id"`
+	IsContactRequest    bool             `json:"isContactRequest"`
+	IsDeviceChat        bool             `json:"isDeviceChat"`
 	// True if the chat is encrypted. This means that all messages in the chat are encrypted, and all contacts in the chat are "key-contacts", i.e. identified by the PGP key fingerprint.
 	//
 	// False if the chat is unencrypted. This means that all messages in the chat are unencrypted, and all contacts in the chat are "address-contacts", i.e. identified by the email address. The UI should mark this chat e.g. with a mail-letter icon.
@@ -1877,8 +1860,7 @@ type FullChat struct {
 	Pinned         bool     `json:"pinned"`
 	ProfileImage   *string  `json:"profileImage,omitempty"`
 	// Note that this is different from [`ChatListItem::is_self_in_group`](`crate::api::types::chat_list::ChatListItemFetchResult::ChatListItem::is_self_in_group`). This property should only be accessed when [`FullChat::chat_type`] is [`Chattype::Group`].
-	SelfInGroup     bool `json:"selfInGroup"`
-	WasSeenRecently bool `json:"wasSeenRecently"`
+	SelfInGroup bool `json:"selfInGroup"`
 }
 
 type HttpResponse struct {
@@ -1929,14 +1911,16 @@ type Message struct {
 	IsEdited           bool          `json:"isEdited"`
 	IsForwarded        bool          `json:"isForwarded"`
 	IsInfo             bool          `json:"isInfo"`
+	IsPinned           bool          `json:"isPinned"`
 	OriginalMsgId      *uint32       `json:"originalMsgId,omitempty"`
 	OverrideSenderName *string       `json:"overrideSenderName,omitempty"`
 	ParentId           *uint32       `json:"parentId,omitempty"`
 	Quote              *MessageQuote `json:"-"`
-	Reactions          *Reactions    `json:"reactions,omitempty"`
-	ReceivedTimestamp  int64         `json:"receivedTimestamp"`
-	SavedMessageId     *uint32       `json:"savedMessageId,omitempty"`
-	Sender             Contact       `json:"sender"`
+	// `None` when there are no reactions.
+	Reactions         *Reactions `json:"reactions,omitempty"`
+	ReceivedTimestamp int64      `json:"receivedTimestamp"`
+	SavedMessageId    *uint32    `json:"savedMessageId,omitempty"`
+	Sender            Contact    `json:"sender"`
 	// True if the message was correctly encrypted&signed, false otherwise. Historically, UIs showed a small padlock on the message then.
 	//
 	// Today, the UIs should instead show a small email-icon on the message if `show_padlock` is `false`, and nothing if it is `true`.
@@ -1975,6 +1959,7 @@ func (s *Message) UnmarshalJSON(data []byte) error {
 		IsEdited              bool              `json:"isEdited"`
 		IsForwarded           bool              `json:"isForwarded"`
 		IsInfo                bool              `json:"isInfo"`
+		IsPinned              bool              `json:"isPinned"`
 		OriginalMsgId         *uint32           `json:"originalMsgId,omitempty"`
 		OverrideSenderName    *string           `json:"overrideSenderName,omitempty"`
 		ParentId              *uint32           `json:"parentId,omitempty"`
@@ -2017,6 +2002,7 @@ func (s *Message) UnmarshalJSON(data []byte) error {
 	s.IsEdited = raw.IsEdited
 	s.IsForwarded = raw.IsForwarded
 	s.IsInfo = raw.IsInfo
+	s.IsPinned = raw.IsPinned
 	s.OriginalMsgId = raw.OriginalMsgId
 	s.OverrideSenderName = raw.OverrideSenderName
 	s.ParentId = raw.ParentId
@@ -2183,14 +2169,16 @@ type MessageLoadResultMessage struct {
 	IsEdited           bool          `json:"isEdited"`
 	IsForwarded        bool          `json:"isForwarded"`
 	IsInfo             bool          `json:"isInfo"`
+	IsPinned           bool          `json:"isPinned"`
 	OriginalMsgId      *uint32       `json:"originalMsgId,omitempty"`
 	OverrideSenderName *string       `json:"overrideSenderName,omitempty"`
 	ParentId           *uint32       `json:"parentId,omitempty"`
 	Quote              *MessageQuote `json:"quote,omitempty"`
-	Reactions          *Reactions    `json:"reactions,omitempty"`
-	ReceivedTimestamp  int64         `json:"receivedTimestamp"`
-	SavedMessageId     *uint32       `json:"savedMessageId,omitempty"`
-	Sender             Contact       `json:"sender"`
+	// `None` when there are no reactions.
+	Reactions         *Reactions `json:"reactions,omitempty"`
+	ReceivedTimestamp int64      `json:"receivedTimestamp"`
+	SavedMessageId    *uint32    `json:"savedMessageId,omitempty"`
+	Sender            Contact    `json:"sender"`
 	// True if the message was correctly encrypted&signed, false otherwise. Historically, UIs showed a small padlock on the message then.
 	//
 	// Today, the UIs should instead show a small email-icon on the message if `show_padlock` is `false`, and nothing if it is `true`.
@@ -2407,31 +2395,12 @@ func (v *MuteDurationUntil) MarshalJSON() ([]byte, error) {
 	}{Kind: "Until", alias: alias(*v)})
 }
 
-type NotifyState string
-
-const (
-	// Not subscribed to push notifications.
-	NotifyStateNotConnected NotifyState = "NotConnected"
-	// Subscribed to heartbeat push notifications.
-	NotifyStateHeartbeat NotifyState = "Heartbeat"
-	// Subscribed to push notifications for new messages.
-	NotifyStateConnected NotifyState = "Connected"
-)
-
-type ProviderInfo struct {
-	BeforeLoginHint string `json:"beforeLoginHint"`
-	// Unique ID, corresponding to provider database filename.
-	Id           string `json:"id"`
-	OverviewPage string `json:"overviewPage"`
-	Status       uint32 `json:"status"`
-}
-
 type Qr interface {
 	isQrVariant()
 	GetKind() string
 }
 
-// Ask the user whether to verify the contact.
+// Ask the user whether to start chatting with the contact.
 //
 // If the user agrees, pass this QR code to [`crate::securejoin::join_securejoin`].
 type QrAskVerifyContact struct {
@@ -2513,7 +2482,7 @@ func (v *QrAskJoinBroadcast) MarshalJSON() ([]byte, error) {
 	}{Kind: "askJoinBroadcast", alias: alias(*v)})
 }
 
-// Contact fingerprint is verified.
+// Contact fingerprint matches.
 //
 // Ask the user if they want to start chatting.
 type QrFprOk struct {
@@ -2529,38 +2498,6 @@ func (v *QrFprOk) MarshalJSON() ([]byte, error) {
 		Kind string `json:"kind"`
 		alias
 	}{Kind: "fprOk", alias: alias(*v)})
-}
-
-// Scanned fingerprint does not match the last seen fingerprint.
-type QrFprMismatch struct {
-	// Contact ID.
-	ContactId *uint32 `json:"contact_id,omitempty"`
-}
-
-func (*QrFprMismatch) isQrVariant()    {}
-func (*QrFprMismatch) GetKind() string { return "fprMismatch" }
-func (v *QrFprMismatch) MarshalJSON() ([]byte, error) {
-	type alias QrFprMismatch
-	return json.Marshal(struct {
-		Kind string `json:"kind"`
-		alias
-	}{Kind: "fprMismatch", alias: alias(*v)})
-}
-
-// The scanned QR code contains a fingerprint but no e-mail address.
-type QrFprWithoutAddr struct {
-	// Key fingerprint.
-	Fingerprint string `json:"fingerprint"`
-}
-
-func (*QrFprWithoutAddr) isQrVariant()    {}
-func (*QrFprWithoutAddr) GetKind() string { return "fprWithoutAddr" }
-func (v *QrFprWithoutAddr) MarshalJSON() ([]byte, error) {
-	type alias QrFprWithoutAddr
-	return json.Marshal(struct {
-		Kind string `json:"kind"`
-		alias
-	}{Kind: "fprWithoutAddr", alias: alias(*v)})
 }
 
 // Ask the user if they want to create an account on the given domain.
@@ -2901,18 +2838,6 @@ func unmarshalQr(data json.RawMessage, out *Qr) error {
 			return err
 		}
 		*out = &v
-	case "fprMismatch":
-		var v QrFprMismatch
-		if err := json.Unmarshal(data, &v); err != nil {
-			return err
-		}
-		*out = &v
-	case "fprWithoutAddr":
-		var v QrFprWithoutAddr
-		if err := json.Unmarshal(data, &v); err != nil {
-			return err
-		}
-		*out = &v
 	case "account":
 		var v QrAccount
 		if err := json.Unmarshal(data, &v); err != nil {
@@ -3023,7 +2948,11 @@ type Reaction struct {
 type Reactions struct {
 	// Unique reactions and their count, sorted in descending order.
 	Reactions []Reaction `json:"reactions"`
-	// Map from a contact to it's reaction to message. There is only a single reaction per contact, but this contains a list of reactions for historical reasons.
+	// Map from a contact to it's reaction to message.
+	//
+	// There is only a single reaction per contact, but this contains a list of reactions for historical reasons.
+	//
+	// For channels subscribers, this map is empty or contains `ContactId::SELF` only.
 	ReactionsByContact map[string][]string `json:"reactionsByContact"`
 }
 
@@ -3088,9 +3017,11 @@ const (
 	SystemMessageTypeWebxdcStatusUpdate       SystemMessageType = "WebxdcStatusUpdate"
 	SystemMessageTypeCallAccepted             SystemMessageType = "CallAccepted"
 	SystemMessageTypeCallEnded                SystemMessageType = "CallEnded"
-	// 1:1 chats info message telling that SecureJoin has started and the user should wait for it to complete.
+	SystemMessageTypeMessagePinned            SystemMessageType = "MessagePinned"
+	SystemMessageTypeMessageUnpinned          SystemMessageType = "MessageUnpinned"
+	// Single chats info message telling that SecureJoin has started and the user should wait for it to complete.
 	SystemMessageTypeSecurejoinWait SystemMessageType = "SecurejoinWait"
-	// 1:1 chats info message telling that SecureJoin is still running, but the user may already send messages.
+	// Single chats info message telling that SecureJoin is still running, but the user may already send messages.
 	SystemMessageTypeSecurejoinWaitTimeout SystemMessageType = "SecurejoinWaitTimeout"
 	// Chat ephemeral message timer is changed.
 	SystemMessageTypeEphemeralTimerChanged SystemMessageType = "EphemeralTimerChanged"
@@ -3101,13 +3032,6 @@ const (
 	// This message contains a users iroh node address.
 	SystemMessageTypeIrohNodeAddr SystemMessageType = "IrohNodeAddr"
 )
-
-type TransportListEntry struct {
-	// Whether this transport is set to 'unpublished'. See `set_transport_unpublished` / `setTransportUnpublished` for details.
-	IsUnpublished bool `json:"isUnpublished"`
-	// The login data entered by the user.
-	Param EnteredLoginParam `json:"param"`
-}
 
 type VcardContact struct {
 	// Email address.

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+RPC_SERVER_VERSION=2.62.0
+
 echo "Checking code with gofmt..."
 OUTPUT=`gofmt -d .`
 if [ -n "$OUTPUT" ]
@@ -12,9 +14,15 @@ fi
 if ! command -v deltachat-rpc-server &> /dev/null
 then
     echo "deltachat-rpc-server not found, installing..."
-    curl -L https://github.com/chatmail/core/releases/download/v2.56.0/deltachat-rpc-server-x86_64-linux --output deltachat-rpc-server
+    curl -fL "https://github.com/chatmail/core/releases/download/v${RPC_SERVER_VERSION}/deltachat-rpc-server-x86_64-linux" --output deltachat-rpc-server
     chmod +x deltachat-rpc-server
     export PATH=`pwd`:"$PATH"
+fi
+
+SERVER_VERSION=$(deltachat-rpc-server --version 2>&1)
+if [ "$SERVER_VERSION" != "$RPC_SERVER_VERSION" ]; then
+    echo "Expected deltachat-rpc-server $RPC_SERVER_VERSION, found $SERVER_VERSION" >&2
+    exit 1
 fi
 
 echo "Checking code with golangci-lint..."
@@ -25,7 +33,7 @@ then
     curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.12.2
 fi
 
-cd v2 && golangci-lint run && cd ..
+(cd v2 && golangci-lint run)
 
 for i in examples/*
 do

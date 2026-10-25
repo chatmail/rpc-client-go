@@ -141,7 +141,7 @@ func TestUnmarshalChatListItemFetchResult(t *testing.T) {
 	t.Parallel()
 
 	var out ChatListItemFetchResult
-	require.Nil(t, unmarshalChatListItemFetchResult(json.RawMessage(`{"kind":"ChatListItem","id":1,"name":"test","color":"#fff","summaryStatus":0,"summaryText1":"","summaryText2":"","timestamp":0,"isProtected":false,"isContactRequest":false,"isSelfTalk":false,"isDeviceChat":false,"isMuted":false,"isArchived":false,"archived":false,"pinned":false,"wasSeenRecently":false}`), &out))
+	require.Nil(t, unmarshalChatListItemFetchResult(json.RawMessage(`{"kind":"ChatListItem","id":1,"name":"test","color":"#fff","summaryStatus":0,"summaryText1":"","summaryText2":"","timestamp":0,"isProtected":false,"isContactRequest":false,"isSelfTalk":false,"isDeviceChat":false,"isMuted":false,"isArchived":false,"archived":false,"pinned":false,"freshness":"Normal"}`), &out))
 	require.Equal(t, "ChatListItem", out.GetKind())
 
 	require.Nil(t, unmarshalChatListItemFetchResult(json.RawMessage(`{"kind":"ArchiveLink","freshMessageCounter":1}`), &out))
@@ -192,7 +192,6 @@ func TestEventType_MarshalJSON(t *testing.T) {
 		&EventTypeImapConnected{Msg: "imap"},
 		&EventTypeSmtpMessageSent{Msg: "sent"},
 		&EventTypeImapMessageDeleted{Msg: "deleted"},
-		&EventTypeImapMessageMoved{Msg: "moved"},
 		&EventTypeImapInboxIdle{},
 		&EventTypeNewBlobFile{File: "file.jpg"},
 		&EventTypeDeletedBlobFile{File: "file.jpg"},
@@ -259,7 +258,6 @@ func TestUnmarshalEventType(t *testing.T) {
 		{"ImapConnected", `{"kind":"ImapConnected","msg":"ok"}`},
 		{"SmtpMessageSent", `{"kind":"SmtpMessageSent","msg":"ok"}`},
 		{"ImapMessageDeleted", `{"kind":"ImapMessageDeleted","msg":"ok"}`},
-		{"ImapMessageMoved", `{"kind":"ImapMessageMoved","msg":"ok"}`},
 		{"ImapInboxIdle", `{"kind":"ImapInboxIdle"}`},
 		{"NewBlobFile", `{"kind":"NewBlobFile","file":"x.jpg"}`},
 		{"DeletedBlobFile", `{"kind":"DeletedBlobFile","file":"x.jpg"}`},
@@ -365,7 +363,7 @@ func TestUnmarshalMessageLoadResult(t *testing.T) {
 	t.Parallel()
 
 	var out MessageLoadResult
-	require.Nil(t, unmarshalMessageLoadResult(json.RawMessage(`{"kind":"message","id":1,"chatId":0,"dimensionsHeight":0,"dimensionsWidth":0,"downloadState":"Done","duration":0,"fileBytes":0,"fromId":0,"hasDeviatingTimestamp":false,"hasHtml":false,"hasLocation":false,"isBot":false,"isEdited":false,"isForwarded":false,"isInfo":false,"isSetupmessage":false,"receivedTimestamp":0,"showPadlock":false,"sortTimestamp":0,"state":0,"subject":"","systemMessageType":"Unknown","text":"hi","timestamp":0,"viewType":"Text","sender":{"address":"","authName":"","color":"","id":0,"isBlocked":false,"isKeyContact":false,"isVerified":false,"lastSeen":0,"name":"","nameAndAddr":"","profileImage":null,"status":"","verifiedBy":0}}`), &out))
+	require.Nil(t, unmarshalMessageLoadResult(json.RawMessage(`{"kind":"message","id":1,"chatId":0,"dimensionsHeight":0,"dimensionsWidth":0,"downloadState":"Done","duration":0,"fileBytes":0,"fromId":0,"hasDeviatingTimestamp":false,"hasHtml":false,"hasLocation":false,"isBot":false,"isEdited":false,"isForwarded":false,"isInfo":false,"isSetupmessage":false,"receivedTimestamp":0,"showPadlock":false,"sortTimestamp":0,"state":0,"subject":"","systemMessageType":"Unknown","text":"hi","timestamp":0,"viewType":"Text","sender":{"address":"","authName":"","color":"","id":0,"isBlocked":false,"isKeyContact":false,"freshness":"Normal","lastSeen":0,"name":"","profileImage":null,"status":""}}`), &out))
 	require.Equal(t, "message", out.GetKind())
 
 	require.Nil(t, unmarshalMessageLoadResult(json.RawMessage(`{"kind":"loadingError","error":"oops"}`), &out))
@@ -433,8 +431,6 @@ func TestQr_MarshalJSON(t *testing.T) {
 		&QrAskVerifyGroup{Authcode: "abc", ContactId: 1, Fingerprint: "fp", Grpid: "grp", Grpname: "Group", Invitenumber: "inv"},
 		&QrAskJoinBroadcast{Authcode: "abc", ContactId: 1, Fingerprint: "fp", Grpid: "grp", Invitenumber: "inv", Name: "channel"},
 		&QrFprOk{ContactId: 1},
-		&QrFprMismatch{},
-		&QrFprWithoutAddr{Fingerprint: "fp"},
 		&QrAccount{Domain: "example.com"},
 		&QrBackup2{AuthToken: "tok", NodeAddr: "addr"},
 		&QrBackupTooNew{},
@@ -470,8 +466,6 @@ func TestUnmarshalQr(t *testing.T) {
 		{"askVerifyGroup", `{"kind":"askVerifyGroup","authcode":"a","contact_id":1,"fingerprint":"fp","grpid":"g","grpname":"G","invitenumber":"inv"}`},
 		{"askJoinBroadcast", `{"kind":"askJoinBroadcast","authcode":"a","contact_id":1,"fingerprint":"fp","grpid":"g","invitenumber":"inv","name":"ch"}`},
 		{"fprOk", `{"kind":"fprOk","contact_id":1}`},
-		{"fprMismatch", `{"kind":"fprMismatch"}`},
-		{"fprWithoutAddr", `{"kind":"fprWithoutAddr","fingerprint":"fp"}`},
 		{"account", `{"kind":"account","domain":"example.com"}`},
 		{"backup2", `{"kind":"backup2","auth_token":"tok","node_addr":"addr"}`},
 		{"backupTooNew", `{"kind":"backupTooNew"}`},
