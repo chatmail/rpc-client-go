@@ -6,7 +6,7 @@ pip install -U git+https://github.com/chatmail/dcrpcgen
 
 SCRIPTS=$(dirname "${BASH_SOURCE[0]}")
 VERSION=$(deltachat-rpc-server --version 2>&1 | tr -d '[:space:]')
-echo $VERSION
+echo deltachat-rpc-server $VERSION
 sed -i -E "s|(download/)[^/]+(/deltachat-rpc-server)|\1v${VERSION}\2|g" "${SCRIPTS}/run_tests.sh"
 
 deltachat-rpc-server --openrpc > schema.json

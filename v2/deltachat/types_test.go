@@ -192,7 +192,6 @@ func TestEventType_MarshalJSON(t *testing.T) {
 		&EventTypeImapConnected{Msg: "imap"},
 		&EventTypeSmtpMessageSent{Msg: "sent"},
 		&EventTypeImapMessageDeleted{Msg: "deleted"},
-		&EventTypeImapMessageMoved{Msg: "moved"},
 		&EventTypeImapInboxIdle{},
 		&EventTypeNewBlobFile{File: "file.jpg"},
 		&EventTypeDeletedBlobFile{File: "file.jpg"},
@@ -238,6 +237,7 @@ func TestEventType_MarshalJSON(t *testing.T) {
 		&EventTypeOutgoingCallAccepted{ChatId: 1, MsgId: 2, AcceptCallInfo: "info"},
 		&EventTypeCallEnded{ChatId: 1, MsgId: 2},
 		&EventTypeTransportsModified{},
+		&EventTypePinnedMessagesChanged{ChatId: 1},
 	}
 
 	for _, event := range events {
@@ -259,7 +259,6 @@ func TestUnmarshalEventType(t *testing.T) {
 		{"ImapConnected", `{"kind":"ImapConnected","msg":"ok"}`},
 		{"SmtpMessageSent", `{"kind":"SmtpMessageSent","msg":"ok"}`},
 		{"ImapMessageDeleted", `{"kind":"ImapMessageDeleted","msg":"ok"}`},
-		{"ImapMessageMoved", `{"kind":"ImapMessageMoved","msg":"ok"}`},
 		{"ImapInboxIdle", `{"kind":"ImapInboxIdle"}`},
 		{"NewBlobFile", `{"kind":"NewBlobFile","file":"x.jpg"}`},
 		{"DeletedBlobFile", `{"kind":"DeletedBlobFile","file":"x.jpg"}`},
@@ -305,6 +304,7 @@ func TestUnmarshalEventType(t *testing.T) {
 		{"OutgoingCallAccepted", `{"kind":"OutgoingCallAccepted","accept_call_info":"info","chat_id":1,"msg_id":2}`},
 		{"CallEnded", `{"kind":"CallEnded","chat_id":1,"msg_id":2}`},
 		{"TransportsModified", `{"kind":"TransportsModified"}`},
+		{"PinnedMessagesChanged", `{"kind":"PinnedMessagesChanged","chatId":1}`},
 	}
 
 	for _, v := range variants {
@@ -433,8 +433,6 @@ func TestQr_MarshalJSON(t *testing.T) {
 		&QrAskVerifyGroup{Authcode: "abc", ContactId: 1, Fingerprint: "fp", Grpid: "grp", Grpname: "Group", Invitenumber: "inv"},
 		&QrAskJoinBroadcast{Authcode: "abc", ContactId: 1, Fingerprint: "fp", Grpid: "grp", Invitenumber: "inv", Name: "channel"},
 		&QrFprOk{ContactId: 1},
-		&QrFprMismatch{},
-		&QrFprWithoutAddr{Fingerprint: "fp"},
 		&QrAccount{Domain: "example.com"},
 		&QrBackup2{AuthToken: "tok", NodeAddr: "addr"},
 		&QrBackupTooNew{},
@@ -470,8 +468,6 @@ func TestUnmarshalQr(t *testing.T) {
 		{"askVerifyGroup", `{"kind":"askVerifyGroup","authcode":"a","contact_id":1,"fingerprint":"fp","grpid":"g","grpname":"G","invitenumber":"inv"}`},
 		{"askJoinBroadcast", `{"kind":"askJoinBroadcast","authcode":"a","contact_id":1,"fingerprint":"fp","grpid":"g","invitenumber":"inv","name":"ch"}`},
 		{"fprOk", `{"kind":"fprOk","contact_id":1}`},
-		{"fprMismatch", `{"kind":"fprMismatch"}`},
-		{"fprWithoutAddr", `{"kind":"fprWithoutAddr","fingerprint":"fp"}`},
 		{"account", `{"kind":"account","domain":"example.com"}`},
 		{"backup2", `{"kind":"backup2","auth_token":"tok","node_addr":"addr"}`},
 		{"backupTooNew", `{"kind":"backupTooNew"}`},
