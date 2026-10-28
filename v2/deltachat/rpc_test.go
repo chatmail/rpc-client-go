@@ -119,8 +119,7 @@ func TestAccount_IsConfigured(t *testing.T) {
 		require.Nil(t, err)
 		require.False(t, configured)
 
-		require.Nil(t, rpc.SetConfigFromQr(accId, acfactory.ConfigQr))
-		require.Nil(t, rpc.Configure(accId))
+		require.Nil(t, rpc.AddTransportFromQr(accId, acfactory.ConfigQr))
 
 		configured, err = rpc.IsConfigured(accId)
 		require.Nil(t, err)
@@ -153,14 +152,6 @@ func TestAccount_Remove(t *testing.T) {
 	t.Parallel()
 	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
 		require.Nil(t, rpc.RemoveAccount(accId))
-	})
-}
-
-func TestAccount_Configure(t *testing.T) {
-	t.Parallel()
-	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
-		require.Nil(t, rpc.SetConfigFromQr(accId, acfactory.ConfigQr))
-		require.Nil(t, rpc.Configure(accId))
 	})
 }
 
@@ -650,15 +641,6 @@ func TestAccount_MaybeNetwork(t *testing.T) {
 	})
 }
 
-func TestAccount_GetProviderInfo(t *testing.T) {
-	t.Parallel()
-	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
-		info, err := rpc.GetProviderInfo(accId, "user@gmail.com")
-		require.Nil(t, err)
-		require.NotNil(t, info)
-	})
-}
-
 func TestContact_GetContact(t *testing.T) {
 	t.Parallel()
 	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
@@ -1086,15 +1068,6 @@ func TestRpc_Sleep(t *testing.T) {
 	t.Parallel()
 	acfactory.WithRpc(func(rpc *Rpc) {
 		require.Nil(t, rpc.Sleep(0))
-	})
-}
-
-func TestAccount_GetPushState(t *testing.T) {
-	t.Parallel()
-	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
-		state, err := rpc.GetPushState(accId)
-		require.Nil(t, err)
-		require.NotEmpty(t, string(state))
 	})
 }
 
@@ -1579,5 +1552,80 @@ func TestRpc_Calls(t *testing.T) {
 			require.Nil(t, err)
 			require.NotNil(t, "Completed", info1.State.GetKind())
 		})
+	})
+}
+
+func TestAccount_AddPseudoTransport(t *testing.T) {
+	t.Parallel()
+	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
+		err := rpc.AddPseudoTransport(accId, "user@example.com")
+		require.Nil(t, err)
+	})
+}
+
+func TestAccount_InitTransports(t *testing.T) {
+	t.Parallel()
+	acfactory.WithUnconfiguredAccount(func(rpc *Rpc, accId uint32) {
+		configured, err := rpc.IsConfigured(accId)
+		require.Nil(t, err)
+		require.False(t, configured)
+
+		require.Nil(t, rpc.InitTransports(accId, nil))
+
+		configured, err = rpc.IsConfigured(accId)
+		require.Nil(t, err)
+		require.True(t, configured)
+	})
+}
+
+func TestRpc_GetMessageSummaryText(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.SendMsg(accId, chatId, MessageData{Text: strptr("test message")})
+		require.Nil(t, err)
+
+		summary, err := rpc.GetMessageSummaryText(accId, msgId, true, true, 50)
+		require.Nil(t, err)
+		require.NotNil(t, summary)
+	})
+}
+
+func TestRpc_SetPinnedMessageState(t *testing.T) {
+	t.Parallel()
+	acfactory.WithGroup(func(rpc *Rpc, accId uint32, chatId uint32) {
+		msgId, err := rpc.SendMsg(accId, chatId, MessageData{Text: strptr("test message")})
+		require.Nil(t, err)
+
+		err = rpc.SetPinnedMessageState(accId, msgId, true)
+		require.Nil(t, err)
+
+		pinnedMsgs, err := rpc.GetPinnedMessages(accId, chatId)
+		require.Nil(t, err)
+		require.Len(t, pinnedMsgs, 1)
+	})
+}
+
+func TestRpc_WaitForAllWorkDone(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		require.Nil(t, rpc.WaitForAllWorkDone(accId))
+	})
+}
+
+func TestRpc_GetAppVersion(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		appSource, err := rpc.GetAppVersion("fake-client", "fake-source")
+		require.Nil(t, err)
+		require.Nil(t, appSource)
+	})
+}
+
+func TestRpc_IsSendingFinished(t *testing.T) {
+	t.Parallel()
+	acfactory.WithOnlineAccount(func(rpc *Rpc, accId uint32) {
+		finished, err := rpc.IsSendingFinished()
+		require.Nil(t, err)
+		require.True(t, finished)
 	})
 }
